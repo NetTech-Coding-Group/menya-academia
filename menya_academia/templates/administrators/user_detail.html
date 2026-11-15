@@ -1,0 +1,41 @@
+{% extends "administrators/base.html" %}
+{% block admin_title %}{{ target.full_name }}{% endblock %}
+{% block admin_heading %}User profile{% endblock %}
+{% block admin_content %}
+<div class="admin-breadcrumb"><a href="{% url 'administrators:user_list' %}">Users</a><span>/</span><span>{{ target.full_name }}</span></div>
+<section class="admin-panel-card profile-card">
+    <div class="profile-heading">
+        <span class="profile-avatar">{{ target.full_name|slice:":1"|upper }}</span>
+        <div><p class="admin-eyebrow">{{ target.get_role_display|upper }}</p><h2>{{ target.full_name }}</h2><p>{{ target.email }} <span class="muted-separator">·</span> {{ target.phone_number }}</p></div>
+        <span class="status-pill {% if target.is_active %}status-success{% else %}status-inactive{% endif %}">{% if target.is_active %}Active{% else %}Inactive{% endif %}</span>
+    </div>
+    <div class="profile-facts">
+        <div><span>Username</span><strong>{{ target.username }}</strong></div>
+        <div><span>Joined</span><strong>{{ target.date_joined|date:"d M Y, H:i" }}</strong></div>
+        <div><span>Email verified</span><strong>{% if target.is_email_verified %}Yes{% else %}No{% endif %}</strong></div>
+        <div><span>Last sign-in</span><strong>{% if target.last_login %}{{ target.last_login|date:"d M Y, H:i" }}{% else %}Never{% endif %}</strong></div>
+    </div>
+    <div class="profile-actions">
+        {% if not protected_account %}
+        <a class="admin-button admin-button-primary" href="{% url 'administrators:user_edit' target.pk %}">Edit profile</a>
+        <form method="post" action="{% url 'administrators:user_status' target.pk %}">{% csrf_token %}<button class="admin-button admin-button-secondary" type="submit">{% if target.is_active %}Deactivate account{% else %}Activate account{% endif %}</button></form>
+        <form method="post" action="{% url 'administrators:user_password_reset' target.pk %}">{% csrf_token %}<button class="admin-button admin-button-secondary" type="submit">Initiate password reset</button></form>
+        <a class="admin-button admin-button-danger" href="{% url 'administrators:user_delete' target.pk %}">Delete user</a>
+        {% else %}
+        <p class="admin-note">Staff and administrator accounts are managed through Django admin.</p>
+        {% endif %}
+    </div>
+</section>
+{% if target.role == "TEACHER" %}
+<section class="admin-panel-card">
+    <div class="admin-section-heading"><div><p class="admin-eyebrow">ACCESS CONTROL</p><h2>Assigned permissions</h2></div><a class="admin-text-link" href="{% url 'administrators:teacher_permissions' %}?teacher={{ target.pk }}">Manage permissions <span aria-hidden="true">→</span></a></div>
+    <div class="permission-chip-list">{% for permission in permissions %}<span class="permission-chip">{{ permission.get_permission_key_display }}</span>{% empty %}<p class="admin-muted">No teacher permissions have been granted.</p>{% endfor %}</div>
+</section>
+{% endif %}
+<section class="admin-panel-card">
+    <div class="admin-section-heading"><div><p class="admin-eyebrow">AUDIT TRAIL</p><h2>Recent activity by this user</h2></div><a class="admin-text-link" href="{% url 'administrators:activity_logs' %}?search={{ target.email|urlencode }}">View logs <span aria-hidden="true">→</span></a></div>
+    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Activity</th><th>Date & time</th><th>Status</th></tr></thead><tbody>
+    {% for activity in activities %}<tr><td>{{ activity.description }}</td><td>{{ activity.created_at|date:"d M Y, H:i" }}</td><td><span class="status-pill status-{{ activity.status|lower }}">{{ activity.get_status_display }}</span></td></tr>{% empty %}<tr><td class="table-empty" colspan="3">No activity recorded for this user.</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+{% load ui_translations %}
+{% block title %}{{ "My profile"|tr }} | MENYA ACADEMIA{% endblock %}
+{% block content %}
+<section class="section section-narrow">
+    <div class="container">
+        <div class="form-card form-card-centered">
+            <p class="eyebrow">{{ "Account settings"|tr }}</p>
+            <h1>{{ "My profile"|tr }}</h1>
+            <p><a href="{% url 'accounts:password_change' %}">{{ "Change password"|tr }}</a></p>
+            {% if request.user.avatar %}
+                <img class="profile-avatar" src="{{ request.user.avatar.url }}" alt="{{ 'Current profile picture'|tr }}">
+            {% endif %}
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="form-errors">{% for error in form.non_field_errors %}{{ error|tr }}{% endfor %}</div>{% endif %}
+                {% for field in form %}
+                    <div class="form-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label|tr }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<p class="field-error">{{ error|tr }}</p>{% endfor %}
+                    </div>
+                {% endfor %}
+                <button class="button button-block" type="submit">{{ "Save profile"|tr }}</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

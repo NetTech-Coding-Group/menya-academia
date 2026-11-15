@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Students · {{ course.title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:course_detail' course.pk %}">← {{ course.title }}</a>
+    <p class="learning-eyebrow">COURSE PERFORMANCE</p><h1>My students</h1><p class="workspace-form-intro">Only verified enrollments in this course are shown. Platform-wide student or revenue data is not available here.</p>
+    <section class="workspace-panel"><div class="workspace-panel-heading"><div><h2>{{ course.title }}</h2></div><span class="course-level course-level-inline">{{ course.get_education_level_display }}</span></div>
+        <div class="student-roster">
+            {% for enrollment in enrollments %}
+            <article class="student-roster-row"><span class="student-roster-avatar">{{ enrollment.student.full_name|slice:":1"|upper }}</span><div class="student-roster-info"><strong>{{ enrollment.student.full_name }}</strong><small>{{ enrollment.student.email }} · Enrolled {{ enrollment.enrolled_at|date:"d M Y" }}</small></div>{% if can_view_progress %}<div class="student-progress-cell"><strong>{{ enrollment.lessons_completed }} / {{ enrollment.lessons_total }} lessons</strong><div class="learning-progress"><span style="width: {{ enrollment.progress_percent }}%"></span></div></div><span class="course-status {% if enrollment.status == 'COMPLETED' %}is-published{% endif %}">{% if enrollment.status == "COMPLETED" %}Completed{% else %}Learning{% endif %}</span>{% else %}<span class="course-status">Enrolled</span>{% endif %}</article>
+            {% empty %}<div class="learning-empty"><span>♙</span><h2>No enrolled students yet</h2><p>Verified course enrollments will appear here.</p></div>{% endfor %}
+        </div>
+    </section>
+</section>
+{% endblock %}

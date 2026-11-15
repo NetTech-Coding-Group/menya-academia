@@ -1,0 +1,28 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Teacher application status · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="container workspace-form-page">
+    <p class="learning-eyebrow">TEACHER APPLICATION</p>
+    <h1>Application status</h1>
+    <article class="application-status-card">
+        <span class="course-status {% if profile.application_status == 'APPROVED' %}is-published{% endif %}">{{ profile.get_application_status_display }}</span>
+        {% if profile.application_status == "PENDING" %}
+        <h2>Thank you for applying, {{ request.user.full_name }}.</h2>
+        <p>Your application is waiting for administrator review. Check your email to make sure your address is verified. We will email you when a decision is made.</p>
+        {% elif profile.application_status == "APPROVED" %}
+        <h2>Your application is approved.</h2>
+        <p>Your teacher account is verified{% if profile.approval_date %} as of {{ profile.approval_date|date:"d M Y" }}{% endif %}. Open your workspace to continue.</p>
+        <a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:workspace' %}">Open teacher workspace</a>
+        {% elif profile.application_status == "REJECTED" %}
+        <h2>Your application was not approved.</h2>
+        <p>{{ profile.rejection_reason|default:"Please contact the platform administrator for further information."|linebreaksbr }}</p>
+        {% else %}
+        <h2>Your teacher account is suspended.</h2>
+        <p>Teacher workspace access is disabled. Contact MENYA ACADEMIA support if you believe this is an error.</p>
+        {% endif %}
+        <dl><div><dt>Submitted</dt><dd>{{ profile.created_at|date:"d M Y" }}</dd></div><div><dt>Subject</dt><dd>{{ profile.get_teaching_subject_display }}</dd></div><div><dt>Email verified</dt><dd>{% if request.user.is_email_verified %}Yes{% else %}Not yet{% endif %}</dd></div></dl>
+    </article>
+</section>
+{% endblock %}

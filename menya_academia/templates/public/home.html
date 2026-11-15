@@ -1,0 +1,78 @@
+{% extends "base/base.html" %}
+{% load ui_translations %}
+{% block title %}MENYA ACADEMIA | {{ "School Courses and Traffic Rules Education"|tr }}{% endblock %}
+{% block content %}
+<section class="hero">
+    <div class="container hero-grid">
+        <div class="hero-copy">
+            <p class="eyebrow">{{ "Two learning paths, one platform"|tr }}</p>
+            <h1>{{ "School Courses"|tr }}<br><span>{{ "and Traffic Rules Education"|tr }}</span></h1>
+            <p class="hero-lead">{{ "MENYA ACADEMIA supports primary and secondary school learners with structured school courses, and helps everyone learn road traffic rules through dedicated practice and exam preparation."|tr }}</p>
+            <div class="hero-actions">
+                <a class="button" href="{% url 'courses:catalog' %}">{{ "Explore school courses"|tr }}</a>
+                <a class="button button-quiet" href="{% url 'provisual:packages' %}">{{ "Explore traffic rules"|tr }}</a>
+                <a class="text-link" href="{% url 'activate_code' %}">{{ "I have a traffic exam code"|tr }} <span aria-hidden="true">→</span></a>
+            </div>
+        </div>
+        <div class="hero-card" aria-label="{{ 'Learning paths'|tr }}">
+            <p class="eyebrow">{{ "Choose your path"|tr }}</p>
+            <h2>{{ "Separate tracks for clearer learning"|tr }}</h2>
+            <p><strong>{{ "School courses:"|tr }}</strong> {{ "teacher-led programs, lessons, assignments, and progress for primary and secondary students."|tr }}</p>
+            <p><strong>{{ "Traffic rules:"|tr }}</strong> {{ "road signs, traffic laws, timed practice exams, results, and answer review."|tr }}</p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;">
+                <span class="status-pill status-pass" style="background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.25);">{{ "Primary & Secondary"|tr }}</span>
+                <span class="status-pill status-pass" style="background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.25);">{{ "Traffic exam practice"|tr }}</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="section-heading">
+            <p class="eyebrow">{{ "Choose a track"|tr }}</p>
+            <h2>{{ "School courses and traffic rules, clearly separated"|tr }}</h2>
+            <p>{{ "Find the right place faster: use School courses for classroom learning, or Traffic rules for road-sign knowledge and exam practice."|tr }}</p>
+        </div>
+        <div class="feature-grid">
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">🎓</span>
+                <h3>{{ "School courses"|tr }}</h3>
+                <p>{{ "Browse teacher-prepared courses for primary and secondary students, with lessons, materials, assignments, and learning progress."|tr }}</p>
+                <p style="margin-top:16px;"><a class="text-link" href="{% url 'courses:catalog' %}">{{ "Browse school courses"|tr }} <span aria-hidden="true">→</span></a></p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">🚦</span>
+                <h3>{{ "Traffic rules & exam practice"|tr }}</h3>
+                <p>{{ "Study traffic laws and signs, choose a PROVISUAL practice plan, activate your code, take timed exams, and review your results."|tr }}</p>
+                <p style="margin-top:16px;"><a class="text-link" href="{% url 'provisual:packages' %}">{{ "Explore traffic rules"|tr }} <span aria-hidden="true">→</span></a></p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true">✓</span>
+                <h3>{{ "Track your progress"|tr }}</h3>
+                <p>{{ "Keep school learning and traffic exam preparation separate, so students and learners always know where to continue."|tr }}</p>
+                <p style="margin-top:16px;"><a class="text-link" href="{% url 'community_results' %}">{{ "View traffic exam results"|tr }} <span aria-hidden="true">→</span></a></p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="page-hero" style="border-top:1px solid var(--line); border-bottom:0;">
+    <div class="container" style="display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;">
+        <div>
+            <p class="eyebrow">{{ "Get Started"|tr }}</p>
+            <h2 style="margin-bottom:8px;">{{ "Start with the path that fits you"|tr }}</h2>
+            <p style="margin:0; color:var(--muted); max-width:700px;">{{ "Create an account to enroll in school courses, or use Traffic rules to practice for road traffic exams with PROVISUAL."|tr }}</p>
+        </div>
+        <div class="hero-actions">
+            {% if request.user.is_authenticated %}
+                <a class="button" href="{% url 'courses:catalog' %}">{{ "Go to school courses"|tr }}</a>
+                <a class="button button-quiet" href="{% url 'provisual:packages' %}">{{ "Go to traffic rules"|tr }}</a>
+            {% else %}
+                <a class="button" href="{% url 'accounts:register' %}">{{ "Create account"|tr }}</a>
+                <a class="button button-quiet" href="{% url 'accounts:login' %}">{{ "Sign in"|tr }}</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

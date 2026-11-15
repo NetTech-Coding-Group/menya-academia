@@ -1,0 +1,17 @@
+.teacher-permissions-page { max-width: 1100px; padding: 40px 0 70px; }
+.teacher-permissions-heading h1 { margin: 8px 0; font-size: clamp(1.8rem, 4vw, 2.6rem); color: var(--navy); }
+.teacher-permissions-heading > p:last-child { color: var(--muted); font-size: 1rem; margin: 0; }
+.teacher-eyebrow { margin: 0; color: var(--teal); font-size: .78rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.teacher-permissions-summary { display: flex; align-items: baseline; gap: 10px; margin: 22px 0 16px; color: var(--muted); }
+.teacher-permissions-summary strong { color: var(--blue); font: 800 1.6rem "Poppins", sans-serif; }
+.teacher-permission-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.teacher-permission-card { padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: var(--shadow-sm); transition: .22s ease; }
+.teacher-permission-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.teacher-permission-card h2 { margin: 0 0 10px; font-size: 1.1rem; color: var(--navy); }
+.teacher-permission-card ul { margin: 0; padding: 0; list-style: none; }
+.teacher-permission-card li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid #edf2f8; color: var(--ink-soft); font-size: .92rem; }
+.teacher-permission-status { white-space: nowrap; font-size: .8rem; font-weight: 800; padding: 3px 8px; border-radius: 999px; }
+.teacher-permission-status.is-allowed { color: #207354; background: #e8f8f1; }
+.teacher-permission-status.is-denied { color: #64788f; background: #eef2f7; }
+.teacher-permission-note { margin: 18px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.65; }
+@media (max-width: 650px) { .teacher-permission-groups { grid-template-columns: 1fr; } }

@@ -1,0 +1,86 @@
+{% load static ui_translations %}
+<!doctype html>
+<html lang="{{ request.LANGUAGE_CODE|default:'en' }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f2942">
+    <meta name="description" content="MENYA ACADEMIA - school courses for primary and secondary learners, plus traffic rules education and exam practice.">
+    <title>{% block title %}MENYA ACADEMIA{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <a class="sr-only" href="#main-content">Skip to content</a>
+    <header class="site-header">
+        <div class="container nav-wrap">
+            <a class="brand" href="{% url 'home' %}" aria-label="MENYA ACADEMIA home">
+                <span class="brand-mark" aria-hidden="true">M</span>
+                <span>MENYA <strong>ACADEMIA</strong></span>
+            </a>
+
+            <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+            <label for="nav-toggle" class="nav-toggle-label" aria-hidden="true"><span></span></label>
+
+            <nav class="main-nav" aria-label="{{ 'Main navigation'|tr }}">
+                <a href="{% url 'home' %}">{{ "Home"|tr }}</a>
+                <a href="{% url 'courses:catalog' %}">{{ "School courses"|tr }}</a>
+                <a href="{% url 'provisual:packages' %}">{{ "Traffic rules"|tr }}</a>
+                <a href="{% url 'community_results' %}">{{ "Traffic exam results"|tr }}</a>
+                {% if request.user.is_authenticated and request.user.role == "STUDENT" %}<a href="{% url 'enrollments:my_courses' %}">{{ "My school courses"|tr }}</a>{% endif %}
+                {% if request.user.is_authenticated and request.user.role == "TEACHER" %}{% if request.user.teacher_profile.application_status == "APPROVED" %}<a href="{% url 'teacher_workspace:workspace' %}">{{ "My workspace"|tr }}</a>{% else %}<a href="{% url 'teachers:application_status' %}">{{ "Application status"|tr }}</a>{% endif %}{% endif %}
+                {% if request.user.is_superuser or request.user.is_staff and request.user.role == "ADMIN" %}<a href="{% url 'administrators:dashboard' %}">{{ "Admin panel"|tr }}</a>{% endif %}
+            </nav>
+
+            <div class="nav-actions">
+                {% if request.user.is_authenticated %}
+                    <a class="nav-profile" href="{% url 'accounts:profile' %}">{{ request.user.username }}</a>
+                    <form method="post" action="{% url 'accounts:logout' %}">
+                        {% csrf_token %}
+                        <button class="link-button" type="submit">{{ "Sign out"|tr }}</button>
+                    </form>
+                {% else %}
+                    <div class="nav-account-box">
+                        <a class="nav-profile" href="{% url 'accounts:login' %}">{{ "Sign in"|tr }}</a>
+                        <a class="button button-small" href="{% url 'accounts:register' %}">{{ "Create account"|tr }}</a>
+                        <a class="nav-profile" href="{% url 'teachers:register' %}">{{ "Become a teacher"|tr }}</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <div class="container messages" aria-live="polite">
+            {% for message in messages %}
+                <div class="message message-{{ message.tags }}">{{ message|tr }}</div>
+            {% endfor %}
+        </div>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div>
+                <strong>MENYA ACADEMIA</strong>
+                <span class="muted"> · </span>
+                <span>{{ "School courses and traffic rules education for primary and secondary learners."|tr }}</span>
+            </div>
+            <form action="{% url 'set_language' %}" method="post" class="language-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <label for="language">{{ "Language"|tr }}</label>
+                <select id="language" name="language" onchange="this.form.submit()">
+                    <option value="en" {% if request.LANGUAGE_CODE == "en" %}selected{% endif %}>English</option>
+                    <option value="fr" {% if request.LANGUAGE_CODE == "fr" %}selected{% endif %}>Français</option>
+                    <option value="rw" {% if request.LANGUAGE_CODE == "rw" %}selected{% endif %}>Kinyarwanda</option>
+                </select>
+            </form>
+        </div>
+    </footer>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

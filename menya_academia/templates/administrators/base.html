@@ -1,0 +1,63 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load humanize %}
+{% block title %}{% block admin_title %}Admin overview{% endblock %} · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'css/admin-panel.css' %}">
+{% endblock %}
+{% block content %}
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" href="{% url 'administrators:dashboard' %}">
+            <span class="admin-brand-mark">M</span>
+            <span>MENYA<br><strong>ACADEMIA</strong></span>
+        </a>
+        <p class="admin-side-label">WORKSPACE</p>
+        <nav class="admin-menu" aria-label="Admin navigation">
+            <a href="{% url 'administrators:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}">
+                <span class="menu-icon">▣</span> Dashboard
+            </a>
+            <a href="{% url 'administrators:user_list' %}" class="{% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_detail' or request.resolver_match.url_name == 'user_edit' or request.resolver_match.url_name == 'user_delete' %}is-active{% endif %}">
+                <span class="menu-icon">👥</span> User management
+            </a>
+            <a href="{% url 'administrators:teacher_permissions' %}" class="{% if request.resolver_match.url_name == 'teacher_permissions' %}is-active{% endif %}">
+                <span class="menu-icon">✓</span> Teacher permissions
+            </a>
+            <a href="{% url 'administrators:teacher_application_list' %}" class="{% if 'teacher_application' in request.resolver_match.url_name %}is-active{% endif %}">
+                <span class="menu-icon">📄</span> Teacher applications
+            </a>
+            <a href="{% url 'administrators:activity_logs' %}" class="{% if request.resolver_match.url_name == 'activity_logs' %}is-active{% endif %}">
+                <span class="menu-icon">↺</span> Activity logs
+            </a>
+        </nav>
+        <p class="admin-side-label admin-side-label-spaced">PLATFORM</p>
+        <div class="admin-menu admin-menu-muted">
+            <span><span class="menu-icon">📘</span> Courses <small>Not configured</small></span>
+            <span><span class="menu-icon">▤</span> Lessons <small>Not configured</small></span>
+            {% if perms.provisual.view_exam %}<a href="/admin/provisual/exam/"><span class="menu-icon">📝</span> Exams &amp; results</a>{% else %}<span><span class="menu-icon">📝</span> Exams &amp; results <small>Not available</small></span>{% endif %}
+            {% if perms.payments.view_paymenttransaction %}<a href="/admin/payments/paymenttransaction/"><span class="menu-icon">₣</span> Payments</a>{% else %}<span><span class="menu-icon">₣</span> Payments <small>Not available</small></span>{% endif %}
+            <span><span class="menu-icon">◷</span> Enrollments <small>Not configured</small></span>
+            <span><span class="menu-icon">📊</span> Reports &amp; analytics <small>Not configured</small></span>
+            <span><span class="menu-icon">🔔</span> Notifications <small>Not configured</small></span>
+            <span><span class="menu-icon">⚙</span> System settings <small>Not configured</small></span>
+        </div>
+        <div class="admin-sidebar-bottom">
+            <span class="admin-avatar">{{ request.user.full_name|default:request.user.username|slice:":1"|upper }}</span>
+            <span class="admin-identity"><strong>{{ request.user.full_name|default:request.user.username }}</strong><small>{% if request.user.is_superuser %}Super Admin{% else %}Administrator{% endif %}</small></span>
+        </div>
+    </aside>
+    <main class="admin-main">
+        <header class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">MENYA ACADEMIA <span>/</span> Administration</span>
+                <h1>{% block admin_heading %}Admin overview{% endblock %}</h1>
+            </div>
+            <div class="admin-top-actions">
+                <span class="admin-date">{% now "D, d M Y" %}</span>
+                <a class="admin-user-chip" href="{% url 'accounts:profile' %}">{{ request.user.username }}</a>
+            </div>
+        </header>
+        {% block admin_content %}{% endblock %}
+    </main>
+</div>
+{% endblock %}

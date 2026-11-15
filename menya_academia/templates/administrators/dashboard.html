@@ -1,0 +1,80 @@
+{% extends "administrators/base.html" %}
+{% load humanize %}
+{% block admin_title %}Admin overview{% endblock %}
+{% block admin_heading %}Admin overview{% endblock %}
+{% block admin_content %}
+<section class="admin-welcome">
+    <div>
+        <p class="admin-eyebrow">OVERVIEW</p>
+        <h2>Welcome back, {{ request.user.full_name|default:request.user.username }}</h2>
+        <p>Here is what is happening across your learning community.</p>
+    </div>
+    <a class="admin-button admin-button-primary" href="{% url 'administrators:user_list' %}">Manage users <span aria-hidden="true">→</span></a>
+</section>
+
+<section class="admin-stat-grid" aria-label="Platform statistics">
+    <article class="admin-stat-card">
+        <span class="stat-symbol stat-blue">♙</span>
+        <span class="stat-label">Total students</span>
+        <strong>{{ total_students|intcomma }}</strong>
+        <span class="stat-caption">Registered student accounts</span>
+    </article>
+    <article class="admin-stat-card">
+        <span class="stat-symbol stat-green">♧</span>
+        <span class="stat-label">Total teachers</span>
+        <strong>{{ total_teachers|intcomma }}</strong>
+        <span class="stat-caption">{{ active_teachers|intcomma }} active accounts</span>
+    </article>
+    <article class="admin-stat-card">
+        <span class="stat-symbol stat-purple">▤</span>
+        <span class="stat-label">Total courses</span>
+        <strong>{{ total_courses|intcomma }}</strong>
+        <span class="stat-caption">Courses created on the platform</span>
+    </article>
+    <article class="admin-stat-card">
+        <span class="stat-symbol stat-orange">◈</span>
+        <span class="stat-label">Active enrollments</span>
+        <strong>{{ active_enrollments|intcomma }}</strong>
+        <span class="stat-caption">Verified paid course enrollments in progress</span>
+    </article>
+</section>
+
+<section class="admin-panel-card">
+    <div class="admin-section-heading">
+        <div>
+            <p class="admin-eyebrow">AUDIT TRAIL</p>
+            <h2>Recent activities</h2>
+        </div>
+        <a class="admin-text-link" href="{% url 'administrators:activity_logs' %}">View all activities <span aria-hidden="true">→</span></a>
+    </div>
+    {% if recent_activities %}
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr><th>Administrator</th><th>Activity</th><th>Date & time</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for activity in recent_activities %}
+                    <tr>
+                        <td><strong>{{ activity.actor_name }}</strong><small>{{ activity.actor_email }}</small></td>
+                        <td>{{ activity.description }}</td>
+                        <td>{{ activity.created_at|date:"d M Y, H:i" }}</td>
+                        <td><span class="status-pill status-{{ activity.status|lower }}">{{ activity.get_status_display }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="admin-empty-state">
+            <span class="empty-icon">◷</span>
+            <strong>No activity recorded yet</strong>
+            <p>Changes made through this admin panel will appear here.</p>
+        </div>
+    {% endif %}
+</section>
+
+<section class="admin-shortcuts">
+    <a href="{% url 'administrators:teacher_application_list' %}"><span class="shortcut-icon">✓</span><span><strong>Teacher applications{% if pending_teacher_applications %} ({{ pending_teacher_applications }}){% endif %}</strong><small>Review qualifications and approve teacher accounts</small></span><b aria-hidden="true">→</b></a>
+    <a href="{% url 'administrators:teacher_permissions' %}"><span class="shortcut-icon">◇</span><span><strong>Teacher permissions</strong><small>Grant or revoke access by capability</small></span><b aria-hidden="true">→</b></a>
+    <a href="{% url 'administrators:user_list' %}"><span class="shortcut-icon shortcut-icon-blue">♙</span><span><strong>User management</strong><small>Review student and teacher accounts</small></span><b aria-hidden="true">→</b></a>
+</section>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}My permissions · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/teacher-workspace.css' %}">{% endblock %}
+{% block content %}
+<section class="container teacher-permissions-page">
+    <div class="teacher-permissions-heading">
+        <p class="teacher-eyebrow">TEACHER WORKSPACE</p>
+        <h1>Your access</h1>
+        <p>Your administrator controls which platform capabilities are available to your account.</p>
+    </div>
+    <div class="teacher-permissions-summary"><strong>{{ granted_count }}</strong><span>permissions currently granted</span></div>
+    <div class="teacher-permission-groups">
+        {% for group in permission_groups %}
+        <section class="teacher-permission-card">
+            <h2>{{ group.title }}</h2>
+            <ul>
+                {% for key,label,allowed in group.permissions %}
+                <li><span>{{ label }}</span><span class="teacher-permission-status {% if allowed %}is-allowed{% else %}is-denied{% endif %}">{% if allowed %}Allowed{% else %}Not granted{% endif %}</span></li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endfor %}
+    </div>
+    <p class="teacher-permission-note">The server checks your assigned permission before protected teacher actions. Access to student information is limited to courses you teach; system settings and platform-wide payment information remain administrator-only.</p>
+</section>
+{% endblock %}

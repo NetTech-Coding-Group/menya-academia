@@ -1,0 +1,45 @@
+{% extends "base/base.html" %}
+{% load static humanize %}
+{% block title %}School courses · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="learning-hero">
+    <div class="container learning-hero-inner">
+        <p class="learning-eyebrow">SCHOOL LEARNING</p>
+        <h1>School courses for primary and secondary students</h1>
+        <p>Explore teacher-prepared school courses, lessons, and learning materials. Looking for road signs and exam practice? Visit <a href="{% url 'provisual:packages' %}">Traffic rules</a>.</p>
+    </div>
+</section>
+<section class="container learning-content">
+    <form method="get" class="course-filters">
+        <label class="sr-only" for="course-search">Search courses</label>
+        <input id="course-search" type="search" name="q" value="{{ search }}" placeholder="Search courses or teachers">
+        <label class="sr-only" for="education-level">Education level</label>
+        <select id="education-level" name="level"><option value="">All education levels</option>{% for value,label in levels %}<option value="{{ value }}" {% if selected_level == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <button class="learning-button learning-button-primary" type="submit">Find courses</button>
+    </form>
+    {% if courses %}
+    <div class="course-grid">
+        {% for course in courses %}
+        <article class="course-card">
+            <a class="course-cover" href="{% url 'courses:detail' course.slug %}">
+                {% if course.cover_image %}<img src="{{ course.cover_image.url }}" alt="">{% else %}<span class="course-cover-placeholder">M</span>{% endif %}
+                <span class="course-level">{{ course.get_education_level_display }}</span>
+            </a>
+            <div class="course-card-content">
+                <span class="course-instructor">By {{ course.teacher.full_name }}{% if course.teacher_verified %}<span class="verified-teacher-badge">Verified teacher</span>{% endif %}</span>
+                <h2><a href="{% url 'courses:detail' course.slug %}">{{ course.title }}</a></h2>
+                <p>{{ course.short_description }}</p>
+                <div class="course-card-footer">
+                    <strong>{{ course.price_rwf|intcomma }} RWF</strong>
+                    {% if course.pk in enrolled_ids %}<a class="course-card-link" href="{% url 'enrollments:my_courses' %}">Continue learning →</a>{% else %}<a class="course-card-link" href="{% url 'courses:detail' course.slug %}">View course →</a>{% endif %}
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="learning-empty"><span>◇</span><h2>No courses found</h2><p>Try a different search, or check back when your teachers publish new courses.</p></div>
+    {% endif %}
+</section>
+{% endblock %}

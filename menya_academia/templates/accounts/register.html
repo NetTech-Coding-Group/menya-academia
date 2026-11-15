@@ -1,0 +1,32 @@
+{% extends "base/base.html" %}
+{% load static ui_translations %}
+{% block title %}{{ "Create account"|tr }} | MENYA ACADEMIA{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+{% block content %}
+<section class="section section-narrow auth-register-page">
+    <div class="container">
+        <div class="form-card form-card-centered">
+            <p class="eyebrow">{{ "Your learning account"|tr }}</p>
+            <h1>{{ "Create an account"|tr }}</h1>
+            {% include "accounts/_social_login.html" %}
+            <div class="auth-email-divider"><span>{{ "or create an account with email"|tr }}</span></div>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="form-errors">{% for error in form.non_field_errors %}{{ error|tr }}{% endfor %}</div>{% endif %}
+                {% for field in form %}
+                    <div class="form-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label|tr }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="help-text">{{ field.help_text|tr|safe }}</div>{% endif %}
+                        {% for error in field.errors %}<p class="field-error">{{ error|tr }}</p>{% endfor %}
+                    </div>
+                {% endfor %}
+                <button class="button button-block" type="submit">{{ "Create account"|tr }}</button>
+            </form>
+            <p class="form-footnote">{{ "Already registered?"|tr }} <a href="{% url 'accounts:login' %}">{{ "Sign in"|tr }}</a></p>
+        </div>
+    </div>
+</section>
+{% endblock %}

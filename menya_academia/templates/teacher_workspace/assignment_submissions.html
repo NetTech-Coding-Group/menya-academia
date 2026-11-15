@@ -1,0 +1,15 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Assignment submissions · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:workspace' %}">← Teacher dashboard</a>
+    <p class="learning-eyebrow">STUDENT WORK</p><h1>Assignment submissions</h1><p class="workspace-form-intro">Review submissions only for courses you teach.</p>
+    <div class="submission-list">
+        {% for submission in submissions %}
+        <article class="submission-card"><div class="submission-header"><div><p class="learning-eyebrow">{{ submission.assignment.lesson.section.course.title }}</p><h2>{{ submission.assignment.title }}</h2><p>{{ submission.student.full_name }} · {{ submission.student.email }}</p></div><span class="course-status {% if submission.is_graded %}is-published{% endif %}">{% if submission.is_graded %}Graded · {{ submission.score }}/{{ submission.assignment.max_points }}{% else %}Needs grading{% endif %}</span></div><p class="submission-answer">{{ submission.answer|truncatechars:240 }}</p><small>Submitted {{ submission.submitted_at|date:"d M Y, H:i" }}</small><a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:submission_grade' submission.pk %}">{% if submission.is_graded %}Update grade{% else %}Review and grade{% endif %}</a></article>
+        {% empty %}<div class="learning-empty"><span>✓</span><h2>No submissions yet</h2><p>Student work for your assignments will appear here.</p></div>{% endfor %}
+    </div>
+</section>
+{% endblock %}

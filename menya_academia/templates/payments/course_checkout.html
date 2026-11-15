@@ -1,0 +1,21 @@
+{% extends "base/base.html" %}
+{% load static humanize %}
+{% block title %}Enroll in {{ course.title }} · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="container checkout-layout">
+    <div class="checkout-intro"><a class="learning-back-link" href="{% url 'courses:detail' course.slug %}">← Back to course</a><p class="learning-eyebrow">SECURE COURSE ENROLLMENT</p><h1>Complete your enrollment</h1><p>Course access will remain locked until your payment is independently verified by the payment provider.</p></div>
+    <div class="checkout-card">
+        <div class="checkout-course"><span>{{ course.get_education_level_display }}</span><h2>{{ course.title }}</h2><small>By {{ course.teacher.full_name }}</small></div>
+        <div class="checkout-total"><span>Total due</span><strong>{{ course.price_rwf|intcomma }} RWF</strong></div>
+        {% if form.non_field_errors %}<div class="checkout-errors">{{ form.non_field_errors }}</div>{% endif %}
+        <form method="post" class="checkout-form">
+            {% csrf_token %}
+            <fieldset><legend>Choose payment method</legend>{% for radio in form.provider %}<label class="provider-option">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}{% for error in form.provider.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</fieldset>
+            <label for="{{ form.phone_number.id_for_label }}">Mobile Money phone number</label>{{ form.phone_number }}{% for error in form.phone_number.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            <button type="submit" class="learning-button learning-button-primary learning-button-full">Request secure payment</button>
+        </form>
+        <p class="checkout-safety">Payments are never marked complete based on a browser redirect. Your course unlocks only after verified provider confirmation.</p>
+    </div>
+</section>
+{% endblock %}

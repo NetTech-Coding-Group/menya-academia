@@ -1,0 +1,13 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Grade submission · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="container workspace-form-page">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:assignment_submissions' %}">← Assignment submissions</a>
+    <p class="learning-eyebrow">{{ submission.assignment.lesson.section.course.title }} · {{ submission.assignment.title }}</p>
+    <h1>Review {{ submission.student.full_name }}'s work</h1>
+    <article class="student-answer-card"><p>{{ submission.answer|linebreaks }}</p><small>Submitted {{ submission.submitted_at|date:"d M Y, H:i" }}</small></article>
+    <form method="post" class="learning-form-card">{% csrf_token %}{% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}{% for field in form %}<div class="learning-field"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.name == "score" %} (out of {{ submission.assignment.max_points }}){% endif %}</label>{{ field }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>{% endfor %}<div class="learning-form-actions"><a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:assignment_submissions' %}">Cancel</a><button class="learning-button learning-button-primary" type="submit">Save grade and feedback</button></div></form>
+</section>
+{% endblock %}

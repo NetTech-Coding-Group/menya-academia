@@ -1,0 +1,52 @@
+{% extends "base/base.html" %}
+{% load humanize %}
+{% load ui_translations %}
+{% block title %}{{ "Traffic rules & exam practice"|tr }} | MENYA ACADEMIA{% endblock %}
+{% block content %}
+<div class="traffic-rules-page">
+    {% include "provisual/_traffic_slideshow.html" %}
+<section class="page-hero">
+    <div class="container">
+        <p class="eyebrow">{{ "Traffic rules track"|tr }}</p>
+        <h1>{{ "Traffic rules & exam practice"|tr }}</h1>
+        <p>{{ "Learn road traffic laws and signs, then choose a practice plan for timed PROVISUAL exams. This is separate from school courses."|tr }} <a href="{% url 'courses:catalog' %}">{{ "Looking for school courses?"|tr }}</a></p>
+        <div class="hero-actions" style="margin-top:18px;">
+            <a class="button" href="{% url 'activate_code' %}">{{ "Activate traffic exam code"|tr }}</a>
+            <a class="button button-quiet" href="{% url 'community_results' %}">{{ "View traffic exam results"|tr }}</a>
+        </div>
+    </div>
+</section>
+<section class="section">
+    <div class="container">
+        {% if packages %}
+            <div class="plans-grid">
+                {% for package in packages %}
+                    <article class="plan-card {% if package.package_type == 'MONTHLY' %}plan-featured{% endif %}">
+                        {% if package.package_type == "MONTHLY" %}<span class="plan-label">{{ "Best value"|tr }}</span>{% endif %}
+                        <h2>{{ package.name }}</h2>
+                        <p class="plan-price">{{ package.price_rwf|intcomma }} <span>RWF</span></p>
+                        {% if package.package_type == "SINGLE" %}
+                            <p>{{ "One completed examination."|tr }}</p>
+                        {% else %}
+                            <p>{{ package.duration_days }}{{ " days of access, with multiple practice exams."|tr }}</p>
+                        {% endif %}
+                        <ul class="check-list">
+                            <li>{{ "Timed, randomized practice"|tr }}</li>
+                            <li>{{ "Instant score and result"|tr }}</li>
+                            <li>{{ "Review your answers"|tr }}</li>
+                        </ul>
+                        <a class="button button-block" href="{% url 'provisual:checkout' package.id %}">{{ "Choose plan"|tr }}</a>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="notice notice-info">
+                <strong>{{ "Plans are not set up yet."|tr }}</strong>
+                <p>{{ "An administrator should run"|tr }} <code>python manage.py seed_provisual</code>{{ " to load the initial plans."|tr }}</p>
+            </div>
+        {% endif %}
+        <p class="fine-print">{{ "Listed monthly pricing is 100,000 RWF as specified in the project brief; confirm this amount before public launch. Mobile-money checkout will remain unavailable until official provider integrations are configured."|tr }}</p>
+    </div>
+</section>
+</div>
+{% endblock %}

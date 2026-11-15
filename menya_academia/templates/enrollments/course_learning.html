@@ -1,0 +1,30 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}{{ course.title }} · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="course-learning-shell">
+    <header class="course-learning-header">
+        <div><a class="learning-back-link" href="{% url 'enrollments:my_courses' %}">← My courses</a><p class="learning-eyebrow">YOUR COURSE</p><h1>{{ course.title }}</h1><p>By {{ course.teacher.full_name }}</p></div>
+        <div class="learning-progress-summary"><strong>{{ progress_percent }}%</strong><span>course complete</span><div class="learning-progress"><span style="width: {{ progress_percent }}%"></span></div><small>{{ lessons_completed }} of {{ lessons_total }} lessons</small></div>
+    </header>
+    {% if announcements %}<section class="course-announcement-panel"><h2>Announcements</h2>{% for announcement in announcements %}<article><strong>{{ announcement.title }}</strong><time>{{ announcement.created_at|date:"d M Y" }}</time><p>{{ announcement.message|linebreaksbr }}</p></article>{% endfor %}</section>{% endif %}
+    <div class="course-learning-layout">
+        <main class="course-curriculum">
+            <h2>Course curriculum</h2>
+            {% if lessons_total %}
+                {% for section in sections %}
+                    {% if section.active_lesson_count %}
+                    <section class="curriculum-section"><header><span>{{ section.position|stringformat:"02d" }}</span><div><h3>{{ section.title }}</h3><small>{{ section.active_lesson_count }} lessons</small></div></header>
+                        <ul>{% for lesson in section.lessons.all %}{% if not lesson.is_archived %}<li><span class="curriculum-lesson-icon">{% if lesson.kind == "VIDEO" %}▷{% elif lesson.kind == "PDF" %}▧{% else %}≡{% endif %}</span><a href="{% url 'lessons:lesson_detail' lesson.pk %}">{{ lesson.title }}</a>{% if lesson.pk in progress_ids %}<span class="lesson-complete-tag">Complete</span>{% endif %}</li>{% endif %}{% endfor %}</ul>
+                    </section>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <p>Your teacher is preparing the course content.</p>
+            {% endif %}
+        </main>
+        <aside class="course-instructor-card"><span class="instructor-avatar">{{ course.teacher.full_name|slice:":1"|upper }}</span><p class="learning-eyebrow">YOUR TEACHER</p><h2>{{ course.teacher.full_name }}</h2><p>Course materials, assignments, and announcements will appear here as your teacher adds them.</p></aside>
+    </div>
+</section>
+{% endblock %}

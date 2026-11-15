@@ -1,0 +1,38 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}{{ lesson.title }} · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="lesson-page">
+    <a class="learning-back-link" href="{% url 'enrollments:course_learning' enrollment.pk %}">← {{ course.title }}</a>
+    <p class="learning-eyebrow">{{ lesson.section.title }} · {{ lesson.get_kind_display }}</p>
+    <h1>{{ lesson.title }}</h1>
+    {% if lesson.is_archived %}<p class="lesson-archived-notice">This lesson has been archived. You can still review its content, but it does not count toward active course progress.</p>{% endif %}
+    {% if lesson.description %}<p class="lesson-description">{{ lesson.description }}</p>{% endif %}
+    {% if lesson.kind == "VIDEO" %}
+        {% if lesson.material %}<video class="lesson-video" controls preload="metadata"><source src="{% url 'teacher_workspace:private_lesson_material' lesson.pk %}">Your browser does not support video playback.</video>
+        {% elif lesson.video_url %}<p><a class="learning-button learning-button-secondary" href="{{ lesson.video_url }}" target="_blank" rel="noopener noreferrer">Open lesson video ↗</a></p>{% endif %}
+    {% elif lesson.kind == "PDF" %}
+        <a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:private_lesson_material' lesson.pk %}" target="_blank" rel="noopener">Open course PDF ↗</a>
+    {% elif lesson.content %}
+        <article class="lesson-reading">{{ lesson.content|linebreaks }}</article>
+    {% endif %}
+    {% if assignments %}
+    <section class="lesson-assignments"><p class="learning-eyebrow">PRACTICE</p><h2>Assignments</h2>
+        {% for assignment in assignments %}
+        <article class="assignment-card"><div class="assignment-heading"><div><h3>{{ assignment.title }}</h3><p>{{ assignment.instructions|linebreaksbr }}</p></div>{% if assignment.due_at %}<time>Due {{ assignment.due_at|date:"d M Y, H:i" }}</time>{% else %}<time>No deadline</time>{% endif %}</div>
+            {% for submission_id,submission in submissions.items %}{% if submission.assignment_id == assignment.pk %}
+                <div class="assignment-feedback"><strong>{% if submission.is_graded %}{{ submission.score }} / {{ assignment.max_points }} points{% else %}Submitted for grading{% endif %}</strong>{% if submission.feedback %}<p>{{ submission.feedback|linebreaksbr }}</p>{% endif %}</div>
+                {% if not submission.is_graded and assignment.is_open %}<form method="post" action="{% url 'lessons:assignment_submit' assignment.pk %}" class="assignment-submit-form">{% csrf_token %}<label for="answer-{{ assignment.pk }}">Update your answer</label><textarea id="answer-{{ assignment.pk }}" name="answer" rows="5" required>{{ submission.answer }}</textarea><button class="learning-button learning-button-primary" type="submit">Update submission</button></form>{% endif %}
+            {% endif %}{% endfor %}
+            {% if assignment.pk not in submissions %}{% if assignment.is_open %}<form method="post" action="{% url 'lessons:assignment_submit' assignment.pk %}" class="assignment-submit-form">{% csrf_token %}<label for="answer-{{ assignment.pk }}">Your answer</label><textarea id="answer-{{ assignment.pk }}" name="answer" rows="5" required></textarea><button class="learning-button learning-button-primary" type="submit">Submit assignment</button></form>{% else %}<p class="assignment-closed">The submission deadline has passed.</p>{% endif %}{% endif %}
+        </article>
+        {% endfor %}
+    </section>
+    {% endif %}
+    {% if not lesson.is_archived %}<form method="post" action="{% url 'enrollments:mark_lesson_complete' enrollment.pk lesson.pk %}" class="lesson-complete-form">
+        {% csrf_token %}
+        {% if is_completed %}<button class="learning-button learning-button-secondary" type="submit" disabled>✓ Lesson complete</button>{% else %}<button class="learning-button learning-button-primary" type="submit">Mark lesson complete</button>{% endif %}
+    </form>{% endif %}
+</section>
+{% endblock %}

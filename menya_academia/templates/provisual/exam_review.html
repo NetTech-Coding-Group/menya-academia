@@ -1,0 +1,35 @@
+{% extends "base/base.html" %}
+{% load ui_translations %}
+{% block title %}{{ "Answer review"|tr }} | MENYA ACADEMIA{% endblock %}
+{% block content %}
+<div class="traffic-rules-page">
+    {% include "provisual/_traffic_slideshow.html" %}
+<section class="section">
+    <div class="container review-wrap">
+        <a class="back-link" href="{% url 'exam_results' attempt.id %}">← {{ "Back to result"|tr }}</a>
+        <p class="eyebrow">{{ "Your private review"|tr }}</p>
+        <h1>{{ "Review your answers"|tr }}</h1>
+        <p>{{ "Only you can see the answers from this examination."|tr }}</p>
+        {% for row in review_rows %}
+            <article class="review-card">
+                <p class="question-number">{{ "QUESTION"|tr }} {{ row.entry.position }}</p>
+                <h2>{{ row.text }}</h2>
+                {% if row.entry.question.image %}
+                    <img class="question-image" src="{{ row.entry.question.image.url }}" alt="{{ 'Illustration for the question'|tr }}">
+                {% endif %}
+                <div class="review-options">
+                    {% for option, option_text in row.options %}
+                        <div class="review-option {% if row.entry.correct_option_id == option.id %}review-correct{% elif row.answer.selected_option_id == option.id %}review-wrong{% endif %}">
+                            <span class="option-letter">{{ option.letter }}</span>
+                            <span>{{ option_text }}</span>
+                            {% if row.entry.correct_option_id == option.id %}<strong>{{ "Correct answer"|tr }}</strong>{% elif row.answer.selected_option_id == option.id %}<strong>{{ "Your answer"|tr }}</strong>{% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if row.explanation %}<p class="explanation"><strong>{{ "Why:"|tr }}</strong> {{ row.explanation }}</p>{% endif %}
+            </article>
+        {% endfor %}
+    </div>
+</section>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base/base.html" %}
+{% load static humanize %}
+{% block title %}My courses · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+    <header class="workspace-heading"><div><p class="learning-eyebrow">STUDENT WORKSPACE</p><h1>My courses</h1><p>Your paid courses and learning progress.</p></div><a class="learning-button learning-button-secondary" href="{% url 'courses:catalog' %}">Explore courses</a></header>
+    {% if enrollments %}
+    <div class="student-course-grid">{% for enrollment in enrollments %}
+        <article class="student-course-card">
+            <a class="student-course-cover" href="{% url 'enrollments:course_learning' enrollment.pk %}">{% if enrollment.course.cover_image %}<img src="{{ enrollment.course.cover_image.url }}" alt="">{% else %}<span>M</span>{% endif %}</a>
+            <div class="student-course-info"><span class="course-level course-level-inline">{{ enrollment.course.get_education_level_display }}</span><h2><a href="{% url 'enrollments:course_learning' enrollment.pk %}">{{ enrollment.course.title }}</a></h2><p>Teacher: {{ enrollment.course.teacher.full_name }}</p>
+                <div class="progress-label"><span>{{ enrollment.lessons_completed }} of {{ enrollment.lessons_total }} lessons</span><strong>{{ enrollment.progress_percent }}%</strong></div><div class="learning-progress"><span style="width: {{ enrollment.progress_percent }}%"></span></div>
+                <a class="learning-button learning-button-primary" href="{% url 'enrollments:course_learning' enrollment.pk %}">Continue learning →</a>
+            </div>
+        </article>
+    {% endfor %}</div>
+    {% else %}
+    <div class="learning-empty"><span>▤</span><h2>Your learning starts here</h2><p>Browse the catalogue, choose a course, and enroll. Paid courses unlock after verified provider confirmation.</p><a class="learning-button learning-button-primary" href="{% url 'courses:catalog' %}">Browse courses</a></div>
+    {% endif %}
+</section>
+{% endblock %}

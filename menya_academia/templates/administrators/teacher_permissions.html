@@ -1,0 +1,26 @@
+{% extends "administrators/base.html" %}
+{% block admin_title %}Teacher permissions{% endblock %}
+{% block admin_heading %}Teacher permissions{% endblock %}
+{% block admin_content %}
+<section class="admin-page-intro">
+    <div><p class="admin-eyebrow">ACCESS CONTROL</p><h2>Manage teacher permissions</h2><p>Grant only the capabilities each teacher needs. Changes are enforced by the backend permission checks.</p></div>
+</section>
+<section class="admin-panel-card admin-form-card">
+    <form method="post" class="permission-form">
+        {% csrf_token %}
+        <div class="admin-field teacher-select-field"><label for="{{ form.teacher.id_for_label }}">Select teacher</label>{{ form.teacher }}{% for error in form.teacher.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+        {% if form.errors.permissions %}<div class="field-error">{{ form.errors.permissions }}</div>{% endif %}
+        <div class="permission-group-grid">
+            {% for group in permission_groups %}
+            <fieldset class="permission-group">
+                <legend>{{ group.title }}</legend>
+                {% for key,label in group.permissions %}
+                <label class="permission-option"><input type="checkbox" name="permissions" value="{{ key }}" {% if form.permissions.value and key in form.permissions.value %}checked{% endif %}><span>{{ label }}</span></label>
+                {% endfor %}
+            </fieldset>
+            {% endfor %}
+        </div>
+        <div class="permission-save-row"><span>{{ selected_permission_count }} permissions selected · changes apply to the selected teacher's account.</span><button class="admin-button admin-button-primary" type="submit">Save permissions</button></div>
+    </form>
+</section>
+{% endblock %}

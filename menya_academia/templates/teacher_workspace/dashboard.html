@@ -1,0 +1,49 @@
+{% extends "base/base.html" %}
+{% load static humanize %}
+{% block title %}Teacher workspace · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+    <header class="workspace-heading">
+        <div><p class="learning-eyebrow">TEACHER WORKSPACE</p><h1>Welcome, {{ request.user.full_name }}</h1><p>Prepare your courses and support your learners.</p></div>
+        <a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:permissions' %}">My permissions ({{ granted_count }})</a>
+    </header>
+    <nav class="workspace-nav" aria-label="Teacher navigation">
+        <a class="is-current" href="{% url 'teacher_workspace:workspace' %}">Dashboard</a>
+        <a href="#my-courses">My courses</a>
+        {% if can_view_students %}<a href="#my-courses">My students</a>{% endif %}
+        {% if can_grade_assignments %}<a href="{% url 'teacher_workspace:assignment_submissions' %}">Assignments</a>{% endif %}
+        <a href="{% url 'teacher_workspace:permissions' %}">My permissions</a>
+        <a href="{% url 'accounts:profile' %}">My profile</a>
+    </nav>
+    <div class="workspace-stats">
+        <article><span>My courses</span><strong>{{ course_count }}</strong><small>Courses you created</small></article>
+        <article><span>Course content</span><strong>{% for course in courses %}{{ course.sections.count }}{% if not forloop.last %}+{% endif %}{% empty %}0{% endfor %}</strong><small>Sections across your workspace</small></article>
+        <article><span>My permissions</span><strong>{{ granted_count }}</strong><small>Capabilities assigned by an admin</small></article>
+    </div>
+    <section id="my-courses" class="workspace-panel">
+        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">YOUR TEACHING</p><h2>My courses</h2></div>{% if can_create_course %}<a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:course_create' %}">＋ Create course</a>{% endif %}</div>
+        <div class="teacher-course-list">
+            {% for course in courses %}
+            <article class="teacher-course-card">
+                <div class="teacher-course-art">{% if course.cover_image %}<img src="{{ course.cover_image.url }}" alt="">{% else %}<span>M</span>{% endif %}</div>
+                <div class="teacher-course-main">
+                    <div class="teacher-course-title"><span class="course-level course-level-inline">{{ course.get_education_level_display }}</span><span class="course-status {% if course.is_published %}is-published{% endif %}">{% if course.is_published %}Published{% else %}Draft{% endif %}</span></div>
+                    <h3><a href="{% url 'teacher_workspace:course_detail' course.pk %}">{{ course.title }}</a></h3>
+                    <p>{{ course.short_description }}</p>
+                    <div class="teacher-course-meta"><span>{{ course.price_rwf|intcomma }} RWF</span><span>Updated {{ course.updated_at|date:"d M Y" }}</span></div>
+                </div>
+                <a class="teacher-course-open" href="{% url 'teacher_workspace:course_detail' course.pk %}" aria-label="Manage {{ course.title }}">Manage →</a>
+            </article>
+            {% empty %}
+            <div class="learning-empty"><span>▤</span><h2>No courses yet</h2><p>{% if can_create_course %}Start with a course title, education level, description, and price.{% else %}Ask your administrator to grant the Create courses permission.{% endif %}</p>{% if can_create_course %}<a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:course_create' %}">Create your first course</a>{% endif %}</div>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="workspace-panel permissions-overview">
+        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">ACCESS</p><h2>What you can do</h2></div><a class="learning-inline-link" href="{% url 'teacher_workspace:permissions' %}">See all permissions →</a></div>
+        <div class="workspace-permission-grid">{% for title,items in permission_groups %}<article><h3>{{ title }}</h3>{% for key,label in items %}<span>{{ label }}</span>{% empty %}<span class="permission-none">No permissions assigned</span>{% endfor %}</article>{% endfor %}</div>
+        <p class="learning-disclaimer">Your course and student information is limited to courses you teach. System settings and platform-wide payment/revenue information are administrator-only.</p>
+    </section>
+</section>
+{% endblock %}

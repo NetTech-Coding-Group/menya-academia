@@ -1,0 +1,44 @@
+{% extends "administrators/base.html" %}
+{% block admin_title %}User management{% endblock %}
+{% block admin_heading %}User management{% endblock %}
+{% block admin_content %}
+<section class="admin-page-intro">
+    <div><p class="admin-eyebrow">PEOPLE</p><h2>Students, teachers & families</h2><p>Review accounts, update profiles, and manage account access.</p></div>
+    {% if perms.accounts.view_user %}<a class="admin-button admin-button-secondary" href="/admin/accounts/user/">Open Django user admin <span aria-hidden="true">↗</span></a>{% endif %}
+</section>
+<section class="admin-panel-card">
+    <form method="get" class="admin-filters">
+        <label class="filter-search"><span class="sr-only">Search users</span><span aria-hidden="true">⌕</span><input type="search" name="q" value="{{ search }}" placeholder="Search name, email or phone"></label>
+        <label><span class="sr-only">Filter by role</span><select name="role"><option value="">All roles</option>{% for value,label in role_choices %}<option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label><span class="sr-only">Filter by account status</span><select name="status"><option value="">Any status</option><option value="active" {% if selected_status == "active" %}selected{% endif %}>Active</option><option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>Inactive</option></select></label>
+        <button class="admin-button admin-button-primary" type="submit">Apply filters</button>
+    </form>
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead><tr><th>User</th><th>Role</th><th>Joined</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+            <tbody>
+                {% for user in page %}
+                <tr>
+                    <td><div class="table-person"><span class="person-avatar">{{ user.full_name|slice:":1"|upper }}</span><span><strong>{{ user.full_name }}</strong><small>{{ user.email }}</small></span></div></td>
+                    <td><span class="role-pill">{{ user.get_role_display }}</span></td>
+                    <td>{{ user.date_joined|date:"d M Y" }}</td>
+                    <td><span class="status-pill {% if user.is_active %}status-success{% else %}status-inactive{% endif %}">{% if user.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                    <td><a class="table-action" href="{% url 'administrators:user_detail' user.pk %}">View profile <span aria-hidden="true">→</span></a></td>
+                </tr>
+                {% empty %}
+                <tr><td class="table-empty" colspan="5">No users match these filters.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if page.paginator.num_pages > 1 %}
+    <nav class="admin-pagination" aria-label="User pages">
+        <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+        <div>
+            {% if page.has_previous %}<a href="?q={{ search|urlencode }}&role={{ selected_role|urlencode }}&status={{ selected_status|urlencode }}&page={{ page.previous_page_number }}">Previous</a>{% endif %}
+            {% if page.has_next %}<a href="?q={{ search|urlencode }}&role={{ selected_role|urlencode }}&status={{ selected_status|urlencode }}&page={{ page.next_page_number }}">Next</a>{% endif %}
+        </div>
+    </nav>
+    {% endif %}
+</section>
+{% endblock %}

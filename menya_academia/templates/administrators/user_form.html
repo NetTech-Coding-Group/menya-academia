@@ -1,0 +1,20 @@
+{% extends "administrators/base.html" %}
+{% block admin_title %}Edit {{ target.full_name }}{% endblock %}
+{% block admin_heading %}Edit user{% endblock %}
+{% block admin_content %}
+<div class="admin-breadcrumb"><a href="{% url 'administrators:user_list' %}">Users</a><span>/</span><a href="{% url 'administrators:user_detail' target.pk %}">{{ target.full_name }}</a><span>/</span><span>Edit</span></div>
+<section class="admin-panel-card admin-form-card">
+    <div class="admin-section-heading"><div><p class="admin-eyebrow">ACCOUNT DETAILS</p><h2>Update user information</h2><p>Changes are recorded in the activity log.</p></div></div>
+    <form method="post" class="admin-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+        <div class="admin-field {% if field.name == 'is_active' or field.name == 'is_email_verified' %}admin-field-checkbox{% endif %}">
+            {% if field.field.widget.input_type == "checkbox" %}{{ field }}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% else %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% endif %}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="admin-form-actions"><a class="admin-button admin-button-secondary" href="{% url 'administrators:user_detail' target.pk %}">Cancel</a><button class="admin-button admin-button-primary" type="submit">Save changes</button></div>
+    </form>
+</section>
+{% endblock %}

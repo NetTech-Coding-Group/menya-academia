@@ -1,0 +1,16 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}{{ page_title }} · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="container workspace-form-page">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:course_detail' course.pk %}">← {{ course.title }}</a>
+    <p class="learning-eyebrow">LESSON MANAGEMENT</p><h1>{{ page_title }}</h1><p class="workspace-form-intro">Video links are limited to YouTube and Vimeo. Uploaded files are private and only served to paid students or the course teacher.</p>
+    <form method="post" enctype="multipart/form-data" class="learning-form-card">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}<div class="learning-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>{% endfor %}
+        <div class="learning-form-actions"><a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:course_detail' course.pk %}">Cancel</a><button class="learning-button learning-button-primary" type="submit">Save lesson</button></div>
+    </form>
+</section>
+{% endblock %}

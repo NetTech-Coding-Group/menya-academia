@@ -1,0 +1,44 @@
+{% extends "base/base.html" %}
+{% load humanize %}
+{% load ui_translations %}
+{% block title %}{{ "Traffic rules checkout"|tr }} | MENYA ACADEMIA{% endblock %}
+{% block content %}
+<div class="traffic-rules-page">
+    {% include "provisual/_traffic_slideshow.html" %}
+<section class="section section-narrow">
+    <div class="container">
+        <a class="back-link" href="{% url 'provisual:packages' %}">← {{ "Back to plans"|tr }}</a>
+        <div class="checkout-layout">
+            <section class="form-card">
+                <p class="eyebrow">{{ "Secure checkout"|tr }}</p>
+                <h1>Continue with {{ package.name }}</h1>
+                <div class="notice notice-warning">
+                    <strong>{{ "Online payments are not connected yet."|tr }}</strong>
+                    <p>{{ "No payment will be taken and no activation code will be issued until an official MTN MoMo or Airtel Money integration is configured."|tr }}</p>
+                </div>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}<div class="form-errors">{% for error in form.non_field_errors %}{{ error|tr }}{% endfor %}</div>{% endif %}
+                    {% for field in form %}
+                        <div class="form-field">
+                            <label for="{{ field.id_for_label }}">{{ field.label|tr }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}<p class="field-error">{{ error|tr }}</p>{% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button class="button button-block" type="submit">{{ "Request payment"|tr }}</button>
+                </form>
+            </section>
+            <aside class="summary-card">
+                <p class="eyebrow">{{ "Order summary"|tr }}</p>
+                <h2>{{ package.name }}</h2>
+                <p class="summary-price">{{ package.price_rwf|intcomma }} <span>RWF</span></p>
+                <p>{% if package.package_type == "SINGLE" %}{{ "One examination"|tr }}{% else %}{{ package.duration_days }}{{ " days access"|tr }}{% endif %}</p>
+                <hr>
+                <p>{{ "Payment method: MTN MoMo or Airtel Money"|tr }}</p>
+            </aside>
+        </div>
+    </div>
+</section>
+</div>
+{% endblock %}

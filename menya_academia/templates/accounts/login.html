@@ -1,0 +1,115 @@
+{% load static ui_translations %}
+<!doctype html>
+<html lang="{{ request.LANGUAGE_CODE|default:'en' }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f8fc">
+    <title>{{ "Sign in"|tr }} | MENYA ACADEMIA</title>
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body class="auth-page">
+    <main class="auth-frame">
+        <section class="auth-panel" aria-labelledby="login-title">
+            <a class="brand auth-brand" href="{% url 'home' %}" aria-label="MENYA ACADEMIA {{ 'Home'|tr }}">
+                <span class="brand-mark">M</span>
+                <span>MENYA <strong>ACADEMIA</strong></span>
+            </a>
+
+            <div class="auth-content">
+                <p class="eyebrow">{{ "Your next step starts here"|tr }}</p>
+                <h1 id="login-title">{{ "Welcome"|tr }}<br>{{ "back."|tr }}</h1>
+                <p class="auth-intro">{{ "Sign in to continue learning and keep your progress moving forward."|tr }}</p>
+
+                {% include "accounts/_social_login.html" %}
+
+                <div class="auth-email-divider"><span>{{ "or sign in with email"|tr }}</span></div>
+                <form method="post" class="auth-form" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next_url }}">
+
+                    {% if form.non_field_errors %}
+                        <div class="auth-errors" role="alert">{% for error in form.non_field_errors %}{{ error|tr }}{% endfor %}</div>
+                    {% endif %}
+
+                    <div class="auth-field">
+                        <label for="{{ form.username.id_for_label }}">{{ "Your email"|tr }}</label>
+                        <input
+                            type="email"
+                            name="{{ form.username.html_name }}"
+                            id="{{ form.username.id_for_label }}"
+                            value="{{ form.username.value|default:'' }}"
+                            autocomplete="username"
+                            placeholder="you@example.com"
+                            required
+                            autofocus
+                        >
+                        {% for error in form.username.errors %}<p class="auth-field-error">{{ error|tr }}</p>{% endfor %}
+                    </div>
+
+                    <div class="auth-field">
+                        <div class="auth-label-row">
+                            <label for="{{ form.password.id_for_label }}">{{ "Password"|tr }}</label>
+                            <a href="{% url 'accounts:password_reset' %}">{{ "Forgot password?"|tr }}</a>
+                        </div>
+                        <div class="password-control">
+                            <input
+                                type="password"
+                                name="{{ form.password.html_name }}"
+                                id="{{ form.password.id_for_label }}"
+                                autocomplete="current-password"
+                                placeholder="{{ 'Enter your password'|tr }}"
+                                required
+                            >
+                            <button class="password-toggle" type="button" aria-label="{{ 'Show password'|tr }}" aria-pressed="false" data-password-toggle data-show-label="{{ 'Show password'|tr }}" data-hide-label="{{ 'Hide password'|tr }}">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M2.5 12s3.4-6.2 9.5-6.2 9.5 6.2 9.5 6.2-3.4 6.2-9.5 6.2S2.5 12 2.5 12Z"></path>
+                                    <circle cx="12" cy="12" r="2.7"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                        {% for error in form.password.errors %}<p class="auth-field-error">{{ error|tr }}</p>{% endfor %}
+                    </div>
+
+                    <label class="remember-option">
+                        <input type="checkbox" name="remember_me" value="1" {% if request.POST.remember_me %}checked{% endif %}>
+                        <span>{{ "Keep me signed in"|tr }}</span>
+                    </label>
+
+                    <button class="button button-block auth-submit" type="submit">{{ "Sign in"|tr }}</button>
+                </form>
+
+                <p class="auth-switch">{{ "New to MENYA ACADEMIA?"|tr }} <a href="{% url 'accounts:register' %}">{{ "Create an account"|tr }}</a></p>
+            </div>
+
+            <div class="auth-bottom">
+                <a href="{% url 'home' %}">← {{ "Back to MENYA ACADEMIA"|tr }}</a>
+                <form action="{% url 'set_language' %}" method="post" class="language-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <label for="auth-language">{{ "Language"|tr }}</label>
+                    <select id="auth-language" name="language" onchange="this.form.submit()">
+                        <option value="en" {% if request.LANGUAGE_CODE == "en" %}selected{% endif %}>English</option>
+                        <option value="fr" {% if request.LANGUAGE_CODE == "fr" %}selected{% endif %}>Français</option>
+                        <option value="rw" {% if request.LANGUAGE_CODE == "rw" %}selected{% endif %}>Kinyarwanda</option>
+                    </select>
+                </form>
+            </div>
+        </section>
+
+        <aside class="auth-art" aria-label="Illustration of learning road safety">
+            <img class="auth-illustration" src="{% static 'images/learning-road.jpg' %}" alt="A learner preparing for a road-safety exam">
+            <div class="art-caption">
+                <span class="art-caption-icon" aria-hidden="true">✓</span>
+                <div>
+                    <strong>{{ "Learn with confidence"|tr }}</strong>
+                    <p>{{ "Practice, improve, and get ready for the road."|tr }}</p>
+                </div>
+            </div>
+            <div class="art-tag"><span></span> {{ "Your journey. Your progress."|tr }}</div>
+        </aside>
+    </main>
+    <script src="{% static 'js/auth.js' %}" defer></script>
+</body>
+</html>

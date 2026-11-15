@@ -1,0 +1,33 @@
+{% extends "base/base.html" %}
+{% load static humanize %}
+{% block title %}{{ course.title }} · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="course-detail-hero">
+    <div class="container course-detail-layout">
+        <div class="course-detail-copy">
+            <a class="learning-back-link" href="{% url 'courses:catalog' %}">← School courses</a>
+            <span class="course-level course-level-inline">School course · {{ course.get_education_level_display }}</span>
+            <h1>{{ course.title }}</h1>
+            <p class="course-detail-summary">{{ course.short_description }}</p>
+            <p class="course-instructor-detail">Prepared by <strong>{{ course.teacher.full_name }}</strong>{% if course.teacher_verified %}<span class="verified-teacher-badge">Verified teacher</span>{% endif %}</p>
+        </div>
+        <aside class="course-purchase-card">
+            {% if course.cover_image %}<img class="course-detail-cover" src="{{ course.cover_image.url }}" alt="">{% endif %}
+            <strong class="course-price">{{ course.price_rwf|intcomma }} <span>RWF</span></strong>
+            <p>One-time course access after payment verification.</p>
+            {% if enrollment %}<a class="learning-button learning-button-primary learning-button-full" href="{% url 'enrollments:course_learning' enrollment.pk %}">Open course</a>
+            {% elif is_teacher %}<a class="learning-button learning-button-secondary learning-button-full" href="{% url 'teacher_workspace:course_edit' course.pk %}">Manage your course</a>
+            {% elif request.user.is_authenticated %}<a class="learning-button learning-button-primary learning-button-full" href="{% url 'courses:checkout' course.slug %}">Continue to payment</a>
+            {% else %}<a class="learning-button learning-button-primary learning-button-full" href="{% url 'accounts:login' %}?next={% url 'courses:checkout' course.slug %}">Sign in to enroll</a>{% endif %}
+            <small>Access is unlocked only after the payment provider confirms receipt.</small>
+        </aside>
+    </div>
+</section>
+<section class="container course-detail-body">
+    <article class="course-description"><p class="learning-eyebrow">ABOUT THIS COURSE</p><h2>What you will learn</h2><div class="course-description-text">{{ course.description|linebreaks }}</div></article>
+    {% if enrollment %}
+    <aside class="course-announcement-panel"><h2>Course announcements</h2>{% for announcement in course.announcements.all %}<article><strong>{{ announcement.title }}</strong><time>{{ announcement.created_at|date:"d M Y" }}</time><p>{{ announcement.message|linebreaksbr }}</p></article>{% empty %}<p>No announcements yet.</p>{% endfor %}</aside>
+    {% endif %}
+</section>
+{% endblock %}

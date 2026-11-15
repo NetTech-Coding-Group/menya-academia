@@ -1,0 +1,29 @@
+{% extends "administrators/base.html" %}
+{% block admin_title %}Teacher applications{% endblock %}
+{% block admin_heading %}Teacher applications{% endblock %}
+{% block admin_content %}
+<section class="admin-panel-card">
+    <div class="admin-section-heading"><div><p class="admin-eyebrow">APPLICATION REVIEW</p><h2>Review teacher applicants</h2></div></div>
+    <form method="get" class="admin-filter-form">
+        <label>Search<input type="search" name="q" value="{{ search }}" placeholder="Name, email, subject or institution"></label>
+        <label>Status<select name="status"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <button class="admin-button admin-button-primary" type="submit">Filter</button>
+    </form>
+    <div class="admin-table-wrap"><table class="admin-table">
+        <thead><tr><th>Applicant</th><th>Teaching subject</th><th>Institution</th><th>Submitted</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for application in page %}
+        <tr>
+            <td><strong>{{ application.user.full_name }}</strong><small>{{ application.user.email }}</small></td>
+            <td>{{ application.get_teaching_subject_display }}</td>
+            <td>{{ application.institution|default:"—" }}</td>
+            <td>{{ application.created_at|date:"d M Y" }}</td>
+            <td><span class="status-pill {% if application.application_status == 'APPROVED' %}status-success{% elif application.application_status == 'PENDING' %}status-warning{% else %}status-inactive{% endif %}">{{ application.get_application_status_display }}</span></td>
+            <td><a class="admin-text-link" href="{% url 'administrators:teacher_application_detail' application.pk %}">Review →</a></td>
+        </tr>
+        {% empty %}<tr><td class="table-empty" colspan="6">No applications match these filters.</td></tr>{% endfor %}
+        </tbody>
+    </table></div>
+    {% if page.has_other_pages %}<nav class="admin-pagination" aria-label="Applications pages">{% if page.has_previous %}<a href="?q={{ search|urlencode }}&status={{ selected_status }}&page={{ page.previous_page_number }}">← Previous</a>{% endif %}<span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?q={{ search|urlencode }}&status={{ selected_status }}&page={{ page.next_page_number }}">Next →</a>{% endif %}</nav>{% endif %}
+</section>
+{% endblock %}

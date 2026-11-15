@@ -1,0 +1,18 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}{{ page_title }} · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="container workspace-form-page">
+    <a class="learning-back-link" href="{% if course %}{% url 'teacher_workspace:course_detail' course.pk %}{% else %}{% url 'teacher_workspace:workspace' %}{% endif %}">← Back to workspace</a>
+    <p class="learning-eyebrow">COURSE MANAGEMENT</p><h1>{{ page_title }}</h1><p class="workspace-form-intro">Students see the course only after you publish it. Your course must include at least one lesson before it can be published.</p>
+    <form method="post" enctype="multipart/form-data" class="learning-form-card">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+        <div class="learning-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+        {% endfor %}
+        <div class="learning-form-actions"><a class="learning-button learning-button-secondary" href="{% if course %}{% url 'teacher_workspace:course_detail' course.pk %}{% else %}{% url 'teacher_workspace:workspace' %}{% endif %}">Cancel</a><button class="learning-button learning-button-primary" type="submit">Save course</button></div>
+    </form>
+</section>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Create assignment · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="container workspace-form-page">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:course_detail' lesson.section.course_id %}">← {{ lesson.section.course.title }}</a>
+    <p class="learning-eyebrow">{{ lesson.title }}</p><h1>Create assignment</h1><p class="workspace-form-intro">Students enrolled in this course can submit an answer. You can grade it and leave private feedback.</p>
+    <form method="post" class="learning-form-card">{% csrf_token %}{% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}{% for field in form %}<div class="learning-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>{% endfor %}<div class="learning-form-actions"><a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:course_detail' lesson.section.course_id %}">Cancel</a><button class="learning-button learning-button-primary" type="submit">Save assignment</button></div></form>
+</section>
+{% endblock %}

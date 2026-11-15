@@ -1,0 +1,64 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load ui_translations %}
+{% block title %}{{ "Practice exam"|tr }} | MENYA ACADEMIA{% endblock %}
+{% block content %}
+<div class="traffic-rules-page">
+    {% include "provisual/_traffic_slideshow.html" %}
+<section class="section exam-section">
+    <div class="container exam-wrap">
+        <div class="exam-topline">
+            <div><p class="eyebrow">{{ "PROVISUAL practice exam"|tr }}</p><h1>{{ attempt.exam.title }}</h1></div>
+            <div class="timer-card" data-deadline="{{ attempt.deadline|date:'c' }}">
+                <span class="timer-label">{{ "Time remaining"|tr }}</span>
+                <strong id="exam-timer">--:--</strong>
+            </div>
+        </div>
+        <div class="progress-row">
+            <span>Question {{ position }} of {{ question_count }}</span>
+            <span>{{ position|floatformat:0 }} / {{ question_count }}</span>
+        </div>
+        <div class="progress-track"><span style="width: {% widthratio position question_count 100 %}%"></span></div>
+        <form method="post" class="question-card" id="exam-form" data-save-url="{% url 'exam_save_answer' attempt.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="finish" id="finish-flag" value="0">
+            <input type="hidden" name="question_id" value="{{ entry.question_id }}">
+            <p class="question-number">{{ "QUESTION"|tr }} {{ position|stringformat:"02d" }}</p>
+            <h2>{{ question_text }}</h2>
+            {% if entry.question.image %}
+                <img class="question-image" src="{{ entry.question.image.url }}" alt="{{ 'Illustration for the question'|tr }}">
+            {% endif %}
+            <div class="answer-list">
+                {% for option, option_text in options %}
+                    <label class="answer-option {% if selected_option_id == option.id %}answer-selected{% endif %}">
+                        <input type="radio" name="option" value="{{ option.id }}" {% if selected_option_id == option.id %}checked{% endif %}>
+                        <span class="option-letter">{{ option.letter }}</span>
+                        <span>{{ option_text }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            <p class="save-status" id="answer-save-status" role="status" aria-live="polite" data-saved-text="{{ 'Answer saved'|tr }}">
+                {% if selected_option_id %}{{ "Answer saved"|tr }}{% else %}{{ "Choose an answer"|tr }}{% endif %}
+            </p>
+            <div hidden id="answer-save-translations"
+                data-saving-text="{{ 'Saving answer…'|tr }}"
+                data-save-failed-text="{{ 'Your answer could not be saved.'|tr }}"
+                data-connection-error-text="{{ 'Connection issue: your answer may not be saved.'|tr }}"></div>
+            <div class="exam-controls">
+                <button class="button button-quiet" type="submit" name="move" value="previous" {% if position == 1 %}disabled{% endif %}>{{ "Previous"|tr }}</button>
+                {% if position < question_count %}
+                    <button class="button" type="submit" name="move" value="next">{{ "Save & next"|tr }}</button>
+                {% else %}
+                    <button class="button" type="submit" name="finish" value="1" formnovalidate>{{ "Submit examination"|tr }}</button>
+                {% endif %}
+            </div>
+        </form>
+        <p class="exam-note">{{ "Your answer is saved when you move between questions. The examination is submitted automatically when the timer reaches zero."|tr }}</p>
+    </div>
+</section>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'js/exam-timer.js' %}" defer></script>
+<script src="{% static 'js/exam-answer.js' %}" defer></script>
+{% endblock %}

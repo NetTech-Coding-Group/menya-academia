@@ -1,0 +1,17 @@
+{% extends "administrators/base.html" %}
+{% block admin_title %}Delete {{ target.full_name }}{% endblock %}
+{% block admin_heading %}Delete user{% endblock %}
+{% block admin_content %}
+<section class="admin-panel-card delete-card">
+    <span class="delete-symbol">!</span>
+    <p class="admin-eyebrow">PERMANENT ACTION</p>
+    <h2>Delete {{ target.full_name }}?</h2>
+    <p>This permanently removes <strong>{{ target.email }}</strong> and revokes their teacher permissions. This action cannot be undone.</p>
+    <form method="post" class="admin-form-actions">
+        {% csrf_token %}
+        <input type="hidden" name="confirm" value="yes">
+        <a class="admin-button admin-button-secondary" href="{% url 'administrators:user_detail' target.pk %}">Cancel</a>
+        <button class="admin-button admin-button-danger" type="submit">Delete account</button>
+    </form>
+</section>
+{% endblock %}

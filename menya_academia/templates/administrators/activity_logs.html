@@ -1,0 +1,24 @@
+{% extends "administrators/base.html" %}
+{% block admin_title %}Activity logs{% endblock %}
+{% block admin_heading %}Activity logs{% endblock %}
+{% block admin_content %}
+<section class="admin-page-intro"><div><p class="admin-eyebrow">AUDIT TRAIL</p><h2>Administrative activity</h2><p>Search administrator actions by activity, user, role, or date.</p></div></section>
+<section class="admin-panel-card">
+    <form method="get" class="admin-filters log-filters">
+        <label class="filter-search"><span class="sr-only">Search activity</span><span aria-hidden="true">⌕</span>{{ form.search }}</label>
+        <label><span class="sr-only">Filter by role</span>{{ form.role }}</label>
+        <label><span class="sr-only">Filter by activity</span>{{ form.action }}</label>
+        <label class="date-filter"><span class="sr-only">From date</span>{{ form.date_from }}</label>
+        <label class="date-filter"><span class="sr-only">To date</span>{{ form.date_to }}</label>
+        <button class="admin-button admin-button-primary" type="submit">Filter</button>
+    </form>
+    {% if form.errors %}<div class="form-errors">{{ form.errors }}</div>{% endif %}
+    <div class="admin-table-wrap"><table class="admin-table">
+        <thead><tr><th>User</th><th>Activity</th><th>Date & time</th><th>Role</th><th>Status</th></tr></thead>
+        <tbody>{% for log in page %}
+            <tr><td><strong>{{ log.actor_name }}</strong><small>{{ log.actor_email }}</small></td><td>{{ log.description }}</td><td>{{ log.created_at|date:"d M Y, H:i" }}</td><td><span class="role-pill">{{ log.actor_role|default:"Unknown" }}</span></td><td><span class="status-pill status-{{ log.status|lower }}">{{ log.get_status_display }}</span></td></tr>
+        {% empty %}<tr><td class="table-empty" colspan="5">No activity matches these filters.</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% if page.paginator.num_pages > 1 %}<nav class="admin-pagination" aria-label="Activity log pages"><span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span><div>{% if page.has_previous %}<a href="?{{ request.GET.urlencode }}&page={{ page.previous_page_number }}">Previous</a>{% endif %}{% if page.has_next %}<a href="?{{ request.GET.urlencode }}&page={{ page.next_page_number }}">Next</a>{% endif %}</div></nav>{% endif %}
+</section>
+{% endblock %}

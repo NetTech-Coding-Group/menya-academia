@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+{% load ui_translations %}
+{% block title %}{{ "Activate traffic exam code"|tr }} | MENYA ACADEMIA{% endblock %}
+{% block content %}
+<div class="traffic-rules-page">
+    {% include "provisual/_traffic_slideshow.html" %}
+<section class="section section-narrow">
+    <div class="container">
+        <div class="form-card form-card-centered">
+            <p class="eyebrow">{{ "Traffic rules track"|tr }}</p>
+            <h1>{{ "Enter your traffic exam activation code"|tr }}</h1>
+            <p>{{ "Your code is verified before a traffic-rules practice exam begins. Only codes issued after confirmed payment can unlock access. This is separate from school course enrollment."|tr }}</p>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="form-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label|tr }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<p class="field-error">{{ error|tr }}</p>{% endfor %}
+                    </div>
+                {% endfor %}
+                <button class="button button-block" type="submit">{{ "Verify code and start"|tr }}</button>
+            </form>
+            <p class="form-footnote">{{ "Need access?"|tr }} <a href="{% url 'provisual:packages' %}">{{ "View traffic rules plans"|tr }}</a> · <a href="{% url 'courses:catalog' %}">{{ "Browse school courses"|tr }}</a></p>
+        </div>
+    </div>
+</section>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Become a teacher · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="container workspace-form-page teacher-application-form-page auth-register-page">
+    <a class="learning-back-link" href="{% url 'accounts:register' %}">← Student registration</a>
+    <p class="learning-eyebrow">TEACH WITH MENYA ACADEMIA</p>
+    <h1>Become a teacher</h1>
+    <p class="workspace-form-intro">Submit your details and qualifications. An administrator will review your application. Teacher workspace access is only enabled after approval and email verification.</p>
+    <form method="post" enctype="multipart/form-data" class="learning-form-card">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+        <div class="learning-field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="learning-form-actions"><button class="learning-button learning-button-primary" type="submit">Submit teacher application</button></div>
+    </form>
+    <p class="form-footnote">Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+</section>
+{% endblock %}

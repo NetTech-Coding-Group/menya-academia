@@ -1,0 +1,2 @@
+-r base.txt
+gunicorn>=23.0; platform_system != "Windows"

@@ -1,0 +1,37 @@
+{% extends "base/base.html" %}
+{% load static humanize %}
+{% block title %}Manage {{ course.title }} · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:workspace' %}">← Teacher dashboard</a>
+    <header class="managed-course-header">
+        <div><span class="course-status {% if course.is_published %}is-published{% endif %}">{% if course.is_published %}Published{% else %}Draft{% endif %}</span><p class="learning-eyebrow">{{ course.get_education_level_display|upper }} · {{ course.price_rwf|intcomma }} RWF</p><h1>{{ course.title }}</h1><p>{{ course.short_description }}</p></div>
+        <div class="managed-course-actions">
+            {% if can_edit %}<a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:course_edit' course.pk %}">Edit details</a>{% endif %}
+            {% if course.is_published %}<a class="learning-button learning-button-secondary" href="{% url 'courses:detail' course.slug %}">View public page ↗</a>{% endif %}
+            {% if can_publish %}<form method="post" action="{% url 'teacher_workspace:course_publish' course.pk %}">{% csrf_token %}<button class="learning-button learning-button-primary" type="submit">{% if course.is_published %}Unpublish{% else %}Publish course{% endif %}</button></form>{% endif %}
+        </div>
+    </header>
+    <div class="managed-course-stats"><article><strong>{{ sections|length }}</strong><span>Sections</span></article>{% if can_view_students %}<article><strong>{{ student_count }}</strong><span>Verified students</span></article>{% endif %}<article><strong>{{ course.price_rwf|intcomma }} RWF</strong><span>Course price</span></article></div>
+    <section class="workspace-panel">
+        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">CURRICULUM</p><h2>Sections and lessons</h2></div><div class="inline-actions">{% if can_create_lesson %}<a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:section_create' course.pk %}">Add section</a><a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:lesson_create' course.pk %}">Add lesson</a>{% endif %}</div></div>
+        <div class="managed-section-list">
+            {% for section in sections %}
+            <article class="managed-section"><header><span class="section-number">{{ section.position|stringformat:"02d" }}</span><div><h3>{{ section.title }}</h3><small>{{ section.active_lesson_count }} lessons</small></div></header>
+                <div class="managed-lessons">{% for lesson in section.lessons.all %}{% if not lesson.is_archived %}<div class="managed-lesson"><span class="lesson-kind-icon">{% if lesson.kind == "VIDEO" %}▷{% elif lesson.kind == "PDF" %}▧{% else %}≡{% endif %}</span><span><strong>{{ lesson.title }}</strong><small>{{ lesson.get_kind_display }}</small></span><div class="inline-actions">{% if can_create_assignments %}<a href="{% url 'teacher_workspace:assignment_create' lesson.pk %}">＋ Assignment</a>{% endif %}{% if can_edit_lesson %}<a href="{% url 'teacher_workspace:lesson_edit' lesson.pk %}">Edit</a>{% endif %}{% if can_delete_lesson %}<form method="post" action="{% url 'teacher_workspace:lesson_archive' lesson.pk %}">{% csrf_token %}<button type="submit">Archive</button></form>{% endif %}</div></div>{% endif %}{% empty %}<p class="course-content-empty">No lessons in this section yet.</p>{% endfor %}</div>
+            </article>
+            {% empty %}<div class="learning-empty"><span>▧</span><h2>Build your course outline</h2><p>Create a section, then add video, PDF, or reading lessons.</p></div>{% endfor %}
+        </div>
+    </section>
+    {% if can_view_students or can_send_announcements %}
+    <div class="workspace-secondary-grid">
+        {% if can_view_students %}<a class="workspace-action-card" href="{% url 'teacher_workspace:course_students' course.pk %}"><span>♙</span><strong>My students</strong><small>See verified enrollments and lesson progress</small>Open roster →</a>{% endif %}
+        {% if can_send_announcements %}<a class="workspace-action-card" href="{% url 'teacher_workspace:announcement_create' course.pk %}"><span>▤</span><strong>Announcements</strong><small>Share course updates with your students</small>Post announcement →</a>{% endif %}
+        {% if can_grade_assignments %}<a class="workspace-action-card" href="{% url 'teacher_workspace:assignment_submissions' %}"><span>✓</span><strong>Assignments</strong><small>Review and grade student work</small>View submissions →</a>{% endif %}
+    </div>
+    {% endif %}
+    {% if can_create_assignments and not can_grade_assignments %}<p class="learning-disclaimer">You can create assignments, but your account does not have permission to review submissions.</p>{% endif %}
+    {% if can_archive %}<section class="workspace-panel archive-course-panel"><div><strong>Archive this course</strong><p>Remove it from the public catalogue. Previously enrolled students keep access.</p></div><form method="post" action="{% url 'teacher_workspace:course_archive' course.pk %}">{% csrf_token %}<button class="learning-button learning-button-danger" type="submit">Archive course</button></form></section>{% endif %}
+</section>
+{% endblock %}

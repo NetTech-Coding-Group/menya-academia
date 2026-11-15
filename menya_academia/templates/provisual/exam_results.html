@@ -1,0 +1,43 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load ui_translations %}
+{% block title %}{{ "Your result"|tr }} | MENYA ACADEMIA{% endblock %}
+{% block content %}
+<div class="traffic-rules-page">
+    {% include "provisual/_traffic_slideshow.html" %}
+<section class="section result-section">
+    <div class="container result-wrap {% if attempt.passed %}result-passed{% else %}result-not-passed{% endif %}">
+        {% if attempt.passed %}
+            <div class="result-icon" aria-hidden="true">✓</div>
+            <p class="eyebrow">{{ "Excellent work"|tr }}</p>
+            <h1>{{ "You passed!"|tr }}</h1>
+            <p class="result-lead">{{ "You showed a strong understanding. Keep building on what you learned."|tr }}</p>
+        {% else %}
+            <div class="result-icon result-icon-muted" aria-hidden="true">↗</div>
+            <p class="eyebrow">{{ "Keep practising"|tr }}</p>
+            <h1>{{ "Every attempt is progress."|tr }}</h1>
+            <p class="result-lead">{{ "Review the explanations, strengthen your knowledge, and try again."|tr }}</p>
+        {% endif %}
+        <div class="score-card">
+            <span>{{ "Your score"|tr }}</span>
+            <strong>{{ attempt.score_percentage }}<small>%</small></strong>
+            <div class="score-stats">
+                <span><strong>{{ attempt.correct_answers }}</strong>{{ " correct"|tr }}</span>
+                <span><strong>{{ incorrect_answers }}</strong>{{ " incorrect"|tr }}</span>
+                <span><strong>{{ attempt.pass_mark }}%</strong>{{ " pass mark"|tr }}</span>
+            </div>
+        </div>
+        {% if attempt.status == "TIMED_OUT" %}<p class="notice notice-info">{{ "Time expired. Your saved answers were submitted automatically."|tr }}</p>{% endif %}
+        <div class="hero-actions result-actions">
+            <a class="button" href="{% url 'exam_review' attempt.id %}">{{ "Review my answers"|tr }}</a>
+            <a class="button button-quiet" href="{% url 'community_results' %}">{{ "Community results"|tr }}</a>
+            <a class="text-link" href="{% url 'activate_code' %}">{{ "Start another exam"|tr }}</a>
+        </div>
+    </div>
+</section>
+</div>
+{% if attempt.passed %}
+<div class="confetti-layer" aria-hidden="true"></div>
+<script src="{% static 'js/confetti.js' %}" defer></script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "administrators/base.html" %}
+{% block admin_title %}Review {{ application.user.full_name }}{% endblock %}
+{% block admin_heading %}Review teacher application{% endblock %}
+{% block admin_content %}
+<div class="admin-breadcrumb"><a href="{% url 'administrators:teacher_application_list' %}">Teacher applications</a><span>/</span><span>{{ application.user.full_name }}</span></div>
+<section class="admin-panel-card">
+    <div class="profile-heading">
+        <span class="profile-avatar">{{ application.user.full_name|slice:":1"|upper }}</span>
+        <div><p class="admin-eyebrow">TEACHER APPLICANT</p><h2>{{ application.user.full_name }}</h2><p>{{ application.user.email }} <span class="muted-separator">·</span> {{ application.user.phone_number }}</p></div>
+        <span class="status-pill {% if application.application_status == 'APPROVED' %}status-success{% elif application.application_status == 'PENDING' %}status-warning{% else %}status-inactive{% endif %}">{{ application.get_application_status_display }}</span>
+    </div>
+    <div class="profile-facts">
+        <div><span>Teaching subject</span><strong>{{ application.get_teaching_subject_display }}</strong></div>
+        <div><span>Institution</span><strong>{{ application.institution|default:"—" }}</strong></div>
+        <div><span>Email verified</span><strong>{% if application.user.is_email_verified %}Yes{% else %}No{% endif %}</strong></div>
+        <div><span>Submitted</span><strong>{{ application.created_at|date:"d M Y, H:i" }}</strong></div>
+        <div><span>Terms accepted</span><strong>{% if application.terms_accepted_at %}{{ application.terms_accepted_at|date:"d M Y, H:i" }}{% else %}Not recorded{% endif %}</strong></div>
+        {% if application.approved_by %}<div><span>Reviewed by</span><strong>{{ application.approved_by.full_name }}</strong></div>{% endif %}
+        {% if application.approval_date %}<div><span>Approval date</span><strong>{{ application.approval_date|date:"d M Y, H:i" }}</strong></div>{% endif %}
+    </div>
+    <div class="teacher-application-bio"><h3>Qualifications</h3><p>{{ application.qualifications|linebreaksbr }}</p><h3>Teaching experience</h3><p>{{ application.teaching_experience|default:"Not provided"|linebreaksbr }}</p></div>
+    {% if application.profile_photo %}<p><a class="admin-text-link" href="{% url 'administrators:teacher_application_photo' application.pk %}">Download profile photo securely</a></p>{% endif %}
+    <div class="teacher-application-documents"><h3>Supporting documents</h3><ul>{% for document in application.supporting_documents.all %}<li><a href="{% url 'administrators:teacher_application_document' document.pk %}">{{ document.original_name }}</a> <small>Uploaded {{ document.uploaded_at|date:"d M Y" }}</small></li>{% empty %}<li>No supporting documents supplied.</li>{% endfor %}</ul></div>
+    {% if application.rejection_reason %}<div class="admin-note"><strong>Rejection reason:</strong> {{ application.rejection_reason|linebreaksbr }}</div>{% endif %}
+    {% if application.application_status == "PENDING" %}
+    <div class="teacher-review-actions">
+        <form method="post" action="{% url 'administrators:teacher_application_approve' application.pk %}">{% csrf_token %}<button class="admin-button admin-button-primary" type="submit">Approve teacher</button></form>
+        <form method="post" action="{% url 'administrators:teacher_application_reject' application.pk %}">{% csrf_token %}{% for error in rejection_form.rejection_reason.errors %}<span class="field-error">{{ error }}</span>{% endfor %}<label for="{{ rejection_form.rejection_reason.id_for_label }}">Reason for rejection</label>{{ rejection_form.rejection_reason }}<button class="admin-button admin-button-danger" type="submit">Reject application</button></form>
+    </div>
+    {% elif application.application_status == "APPROVED" %}
+    <form method="post" action="{% url 'administrators:teacher_application_suspend' application.pk %}">{% csrf_token %}<button class="admin-button admin-button-danger" type="submit">Suspend teacher and revoke permissions</button></form>
+    {% endif %}
+</section>
+{% endblock %}
