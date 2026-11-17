@@ -1,3 +1,4 @@
 -r base.txt
 gunicorn>=23.0; platform_system != "Windows"
 whitenoise
+django-anymail>=15.0,<16.0
