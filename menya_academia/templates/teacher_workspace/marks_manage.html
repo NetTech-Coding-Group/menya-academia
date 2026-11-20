@@ -1,0 +1,57 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Marks — {{ course.title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:marks_select' %}">← Marks</a>
+    <p class="learning-eyebrow">MARKS</p>
+    <h1>{{ course.title }}</h1>
+    <p class="workspace-form-intro">Enter new marks or update existing records for enrolled students.</p>
+
+    <section class="workspace-panel">
+        <div class="workspace-panel-heading"><div><h2>Record marks</h2></div></div>
+        {% if students %}
+        <form method="post" class="learning-form-card">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            {% for field in form %}
+            <div class="learning-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+            {% endfor %}
+            <div class="learning-form-actions"><button class="learning-button learning-button-primary" type="submit">Save marks</button></div>
+        </form>
+        {% else %}
+        <div class="learning-empty"><h2>No enrolled students</h2><p>Verified enrolled students will appear here when they join this class.</p></div>
+        {% endif %}
+    </section>
+
+    <section class="workspace-panel">
+        <div class="workspace-panel-heading"><div><h2>Recorded marks</h2></div></div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr><th>Student</th><th>Assessment</th><th>Term/Type</th><th>Score</th><th>Date</th><th>Recorded by</th><th></th></tr></thead>
+                <tbody>
+                {% for mark in marks %}
+                    <tr>
+                        <td><strong>{{ mark.student.full_name }}</strong></td>
+                        <td>{{ mark.assessment_name }}</td>
+                        <td>{{ mark.term|default:"—" }}{% if mark.assessment_type %} · {{ mark.assessment_type }}{% endif %}</td>
+                        <td><strong>{{ mark.score }}</strong> / {{ mark.max_score }} <small>({{ mark.percentage }}%)</small></td>
+                        <td>{% if mark.assessment_date %}{{ mark.assessment_date|date:"d M Y" }}{% else %}—{% endif %}</td>
+                        <td>{{ mark.recorded_by.full_name }}</td>
+                        <td><a class="table-action" href="{% url 'teacher_workspace:mark_edit' mark.pk %}">Edit</a></td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="table-empty" colspan="7">No marks recorded yet.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}

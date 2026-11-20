@@ -1,0 +1,52 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Performance — {{ course.title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:performance_select' %}">← Performance</a>
+    <p class="learning-eyebrow">STUDENT PERFORMANCE</p>
+    <h1>{{ course.title }}</h1>
+    <p class="workspace-form-intro">Overview of lesson progress, attendance, and recorded marks for enrolled students in this class.</p>
+
+    <section class="workspace-panel">
+        <div class="workspace-panel-heading"><div><h2>Student overview</h2></div></div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr><th>Student</th><th>Lesson progress</th><th>Attendance</th><th>Marks</th></tr></thead>
+                <tbody>
+                {% for enrollment in enrollments %}
+                    <tr>
+                        <td><strong>{{ enrollment.student.full_name }}</strong><br><small>{{ enrollment.student.email }}</small></td>
+                        <td>
+                            <strong>{{ enrollment.lessons_completed }} / {{ enrollment.lessons_total }}</strong> lessons
+                            <div class="learning-progress" style="margin-top:.35rem"><span style="width: {{ enrollment.progress_percent }}%"></span></div>
+                            <small>{{ enrollment.progress_percent }}%</small>
+                        </td>
+                        <td>{% if enrollment.attendance_rate != None %}<strong>{{ enrollment.attendance_rate }}%</strong> <small>({{ enrollment.attendance_present }}/{{ enrollment.attendance_total }} present/late)</small>{% else %}<span class="admin-muted">No records</span>{% endif %}</td>
+                        <td>{% if enrollment.average_score != None %}<strong>{{ enrollment.average_score }}</strong> avg <small>({{ enrollment.mark_count }} records)</small>{% else %}<span class="admin-muted">No marks</span>{% endif %}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="table-empty" colspan="4">No verified enrolled students in this class yet.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="workspace-secondary-grid">
+        <section class="workspace-panel">
+            <div class="workspace-panel-heading"><div><h2>Recent marks</h2></div></div>
+            <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Assessment</th><th>Score</th></tr></thead><tbody>
+                {% for mark in recent_marks %}<tr><td>{{ mark.student.full_name }}</td><td>{{ mark.assessment_name }}</td><td>{{ mark.score }}/{{ mark.max_score }}</td></tr>{% empty %}<tr><td class="table-empty" colspan="3">No marks recorded.</td></tr>{% endfor %}
+            </tbody></table></div>
+        </section>
+        <section class="workspace-panel">
+            <div class="workspace-panel-heading"><div><h2>Recent attendance</h2></div></div>
+            <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Date</th><th>Student</th><th>Status</th></tr></thead><tbody>
+                {% for record in recent_attendance %}<tr><td>{{ record.date|date:"d M Y" }}</td><td>{{ record.student.full_name }}</td><td>{{ record.get_status_display }}</td></tr>{% empty %}<tr><td class="table-empty" colspan="3">No attendance records.</td></tr>{% endfor %}
+            </tbody></table></div>
+        </section>
+    </div>
+</section>
+{% endblock %}

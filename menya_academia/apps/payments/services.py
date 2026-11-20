@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from django.conf import settings
@@ -7,14 +8,18 @@ from django.utils import timezone
 
 from apps.activation_codes.models import ActivationCode
 from apps.enrollments.models import CourseEnrollment
+from apps.notifications.services import send_exam_activation_code
 from apps.payments.models import PaymentTransaction
+
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentGatewayNotConfigured(ImproperlyConfigured):
     pass
 
 
-def request_mobile_money_payment(*, package, full_name, phone_number, email, provider):
+def request_mobile_money_payment(*, package, full_name, phone_number, provider, email=""):
     if not settings.PAYMENTS_ENABLED:
         raise PaymentGatewayNotConfigured(
             "Online payments are not configured. No payment has been taken."
@@ -94,4 +99,11 @@ def confirm_verified_payment(*, reference, provider_reference, amount_rwf):
         payment=payment,
         expires_at=expires_at,
     )
+    # Traffic/exam activation codes are delivered to the phone number by SMS only.
+    try:
+        send_exam_activation_code(payment=payment, activation_code=activation_code)
+    except Exception:
+        logger.exception(
+            "Failed to send activation code SMS for payment %s", payment.reference
+        )
     return activation_code

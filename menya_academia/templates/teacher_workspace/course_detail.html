@@ -24,11 +24,14 @@
             {% empty %}<div class="learning-empty"><span>▧</span><h2>Build your course outline</h2><p>Create a section, then add video, PDF, or reading lessons.</p></div>{% endfor %}
         </div>
     </section>
-    {% if can_view_students or can_send_announcements %}
+    {% if can_view_students or can_send_announcements or can_record_attendance or can_enter_marks or can_monitor_performance %}
     <div class="workspace-secondary-grid">
-        {% if can_view_students %}<a class="workspace-action-card" href="{% url 'teacher_workspace:course_students' course.pk %}"><span>♙</span><strong>My students</strong><small>See verified enrollments and lesson progress</small>Open roster →</a>{% endif %}
-        {% if can_send_announcements %}<a class="workspace-action-card" href="{% url 'teacher_workspace:announcement_create' course.pk %}"><span>▤</span><strong>Announcements</strong><small>Share course updates with your students</small>Post announcement →</a>{% endif %}
-        {% if can_grade_assignments %}<a class="workspace-action-card" href="{% url 'teacher_workspace:assignment_submissions' %}"><span>✓</span><strong>Assignments</strong><small>Review and grade student work</small>View submissions →</a>{% endif %}
+        {% if can_view_students %}<a class="workspace-action-card" href="{% url 'teacher_workspace:course_students' course.pk %}"><strong>My students</strong><small>See verified enrollments and lesson progress</small><span>Open roster →</span></a>{% endif %}
+        {% if can_record_attendance %}<a class="workspace-action-card" href="{% url 'teacher_workspace:attendance_manage' course.pk %}"><strong>Attendance</strong><small>Record and review student attendance</small><span>Manage attendance →</span></a>{% endif %}
+        {% if can_enter_marks %}<a class="workspace-action-card" href="{% url 'teacher_workspace:marks_manage' course.pk %}"><strong>Marks</strong><small>Enter and update student marks</small><span>Manage marks →</span></a>{% endif %}
+        {% if can_monitor_performance %}<a class="workspace-action-card" href="{% url 'teacher_workspace:performance_course' course.pk %}"><strong>Performance</strong><small>Monitor progress, attendance, and marks</small><span>View performance →</span></a>{% endif %}
+        {% if can_send_announcements %}<a class="workspace-action-card" href="{% url 'teacher_workspace:announcement_create' course.pk %}"><strong>Announcements</strong><small>Share course updates with your students</small><span>Post announcement →</span></a>{% endif %}
+        {% if can_grade_assignments %}<a class="workspace-action-card" href="{% url 'teacher_workspace:assignment_submissions' %}"><strong>Assignments</strong><small>Review and grade student work</small><span>View submissions →</span></a>{% endif %}
     </div>
     {% endif %}
     {% if can_create_assignments and not can_grade_assignments %}<p class="learning-disclaimer">You can create assignments, but your account does not have permission to review submissions.</p>{% endif %}

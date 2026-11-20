@@ -1,0 +1,54 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Attendance — {{ course.title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:attendance_select' %}">← Attendance</a>
+    <p class="learning-eyebrow">ATTENDANCE</p>
+    <h1>{{ course.title }}</h1>
+    <p class="workspace-form-intro">Record attendance for enrolled students in this class. Records are tracked per student and date.</p>
+
+    <section class="workspace-panel">
+        <div class="workspace-panel-heading"><div><h2>Record attendance</h2></div></div>
+        {% if students %}
+        <form method="post" class="learning-form-card">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            {% for field in form %}
+            <div class="learning-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+            {% endfor %}
+            <div class="learning-form-actions"><button class="learning-button learning-button-primary" type="submit">Save attendance</button></div>
+        </form>
+        {% else %}
+        <div class="learning-empty"><h2>No enrolled students</h2><p>Verified enrolled students will appear here when they join this class.</p></div>
+        {% endif %}
+    </section>
+
+    <section class="workspace-panel">
+        <div class="workspace-panel-heading"><div><h2>Recent attendance records</h2></div></div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr><th>Date</th><th>Student</th><th>Status</th><th>Remarks</th><th>Marked by</th></tr></thead>
+                <tbody>
+                {% for record in records %}
+                    <tr>
+                        <td>{{ record.date|date:"d M Y" }}</td>
+                        <td><strong>{{ record.student.full_name }}</strong><br><small>{{ record.student.email }}</small></td>
+                        <td><span class="status-pill {% if record.status == 'PRESENT' %}status-success{% elif record.status == 'ABSENT' %}status-danger{% else %}status-warning{% endif %}">{{ record.get_status_display }}</span></td>
+                        <td>{{ record.remarks|default:"—" }}</td>
+                        <td>{{ record.marked_by.full_name }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="table-empty" colspan="5">No attendance records yet.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Student performance — MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:workspace' %}">← Teacher dashboard</a>
+    <p class="learning-eyebrow">PERFORMANCE</p>
+    <h1>Monitor student performance</h1>
+    <p class="workspace-form-intro">Select an assigned class to review learning progress, attendance, and marks.</p>
+    <div class="teacher-course-list">
+        {% for course in courses %}
+        <article class="teacher-course-card">
+            <div class="teacher-course-main">
+                <h3><a href="{% url 'teacher_workspace:performance_course' course.pk %}">{{ course.title }}</a></h3>
+                <p>{{ course.short_description }}</p>
+                <a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:performance_course' course.pk %}">View performance</a>
+            </div>
+        </article>
+        {% empty %}
+        <div class="learning-empty"><h2>No assigned classes</h2><p>You need an assigned class before you can monitor performance.</p></div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

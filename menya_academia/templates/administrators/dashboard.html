@@ -73,8 +73,9 @@
 </section>
 
 <section class="admin-shortcuts">
-    <a href="{% url 'administrators:teacher_application_list' %}"><span class="shortcut-icon">✓</span><span><strong>Teacher applications{% if pending_teacher_applications %} ({{ pending_teacher_applications }}){% endif %}</strong><small>Review qualifications and approve teacher accounts</small></span><b aria-hidden="true">→</b></a>
-    <a href="{% url 'administrators:teacher_permissions' %}"><span class="shortcut-icon">◇</span><span><strong>Teacher permissions</strong><small>Grant or revoke access by capability</small></span><b aria-hidden="true">→</b></a>
-    <a href="{% url 'administrators:user_list' %}"><span class="shortcut-icon shortcut-icon-blue">♙</span><span><strong>User management</strong><small>Review student and teacher accounts</small></span><b aria-hidden="true">→</b></a>
+    <a href="{% url 'administrators:teacher_create' %}"><span class="shortcut-icon">+</span><span><strong>Add teacher</strong><small>Create teacher accounts and assign roles, classes, and permissions</small></span><b aria-hidden="true">→</b></a>
+    <a href="{% url 'administrators:teacher_application_list' %}"><span class="shortcut-icon">📝</span><span><strong>Teacher applications{% if pending_teacher_applications %} ({{ pending_teacher_applications }}){% endif %}</strong><small>Review legacy or submitted applications</small></span><b aria-hidden="true">→</b></a>
+    <a href="{% url 'administrators:teacher_permissions' %}"><span class="shortcut-icon">🔐</span><span><strong>Teacher permissions</strong><small>Grant or revoke access by capability</small></span><b aria-hidden="true">→</b></a>
+    <a href="{% url 'administrators:user_list' %}"><span class="shortcut-icon shortcut-icon-blue">👥</span><span><strong>User management</strong><small>Review student and teacher accounts</small></span><b aria-hidden="true">→</b></a>
 </section>
 {% endblock %}

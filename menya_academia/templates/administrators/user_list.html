@@ -3,8 +3,11 @@
 {% block admin_heading %}User management{% endblock %}
 {% block admin_content %}
 <section class="admin-page-intro">
-    <div><p class="admin-eyebrow">PEOPLE</p><h2>Students, teachers & families</h2><p>Review accounts, update profiles, and manage account access.</p></div>
-    {% if perms.accounts.view_user %}<a class="admin-button admin-button-secondary" href="/admin/accounts/user/">Open Django user admin <span aria-hidden="true">↗</span></a>{% endif %}
+    <div><p class="admin-eyebrow">PEOPLE</p><h2>Students, teachers & families</h2><p>Review accounts, update profiles, and manage account access. Teacher accounts are added by administrators.</p></div>
+    <div class="admin-page-actions">
+        <a class="admin-button admin-button-primary" href="{% url 'administrators:teacher_create' %}">Add teacher</a>
+        {% if perms.accounts.view_user %}<a class="admin-button admin-button-secondary" href="/admin/accounts/user/">Open Django user admin <span aria-hidden="true">↗</span></a>{% endif %}
+    </div>
 </section>
 <section class="admin-panel-card">
     <form method="get" class="admin-filters">

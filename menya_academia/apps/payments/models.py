@@ -43,7 +43,7 @@ class PaymentTransaction(models.Model):
     )
     full_name = models.CharField(max_length=150)
     phone_number = models.CharField(max_length=20)
-    email = models.EmailField()
+    email = models.EmailField(blank=True)
     amount_rwf = models.PositiveIntegerField()
     provider = models.CharField(max_length=20, choices=Provider.choices)
     status = models.CharField(

@@ -1,0 +1,87 @@
+{% extends "administrators/base.html" %}
+{% block admin_title %}{{ page_title }}{% endblock %}
+{% block admin_heading %}{{ page_title }}{% endblock %}
+{% block admin_content %}
+<div class="admin-breadcrumb"><a href="{% url 'administrators:user_list' %}">Users</a>{% if teacher %}<span>/</span><a href="{% url 'administrators:user_detail' teacher.pk %}">{{ teacher.full_name }}</a>{% endif %}<span>/</span><span>{{ page_title }}</span></div>
+<section class="admin-page-intro">
+    <div>
+        <p class="admin-eyebrow">TEACHER MANAGEMENT</p>
+        <h2>{{ page_title }}</h2>
+        <p>{{ page_intro }}</p>
+    </div>
+</section>
+<section class="admin-panel-card admin-form-card">
+    <form method="post" class="admin-form teacher-admin-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="form-section-block">
+            <h3>Account information</h3>
+            <div class="admin-form-grid">
+                {% for field in form %}
+                    {% if field.name == 'full_name' or field.name == 'username' or field.name == 'email' or field.name == 'phone_number' or field.name == 'preferred_language' or field.name == 'password1' or field.name == 'password2' or field.name == 'is_email_verified' or field.name == 'is_active' %}
+                    <div class="admin-field {% if field.field.widget.input_type == 'checkbox' %}admin-field-checkbox{% endif %}">
+                        {% if field.field.widget.input_type == 'checkbox' %}{{ field }}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% else %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% endif %}
+                        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                        {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-section-block">
+            <h3>Role, subjects, and responsibilities</h3>
+            <div class="admin-form-grid">
+                {% for field in form %}
+                    {% if field.name == 'teaching_subject' or field.name == 'teacher_role_title' or field.name == 'assigned_subjects' or field.name == 'responsibilities' or field.name == 'qualifications' or field.name == 'teaching_experience' or field.name == 'institution' %}
+                    <div class="admin-field admin-field-full">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                        {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-section-block">
+            <h3>Assigned classes/courses</h3>
+            <p class="admin-muted">Select the classes or courses this teacher is responsible for. Teachers can only manage assigned classes according to their permissions.</p>
+            <div class="checkbox-grid">
+                {% for checkbox in form.assigned_classes %}
+                <label class="permission-option">{{ checkbox.tag }}<span>{{ checkbox.choice_label }}</span></label>
+                {% empty %}
+                <p class="admin-muted">No active courses available yet. You can assign classes after courses are created.</p>
+                {% endfor %}
+            </div>
+            {% for error in form.assigned_classes.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="form-section-block">
+            <h3>Permissions</h3>
+            <p class="admin-muted">Grant only the capabilities this teacher needs. These permissions control what appears on their personalized dashboard.</p>
+            <div class="permission-group-grid">
+                {% for group in permission_groups %}
+                <fieldset class="permission-group">
+                    <legend>{{ group.title }}</legend>
+                    {% for key,label in group.permissions %}
+                    <label class="permission-option">
+                        <input type="checkbox" name="permissions" value="{{ key }}" {% if form.permissions.value and key in form.permissions.value %}checked{% endif %}>
+                        <span>{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </fieldset>
+                {% endfor %}
+            </div>
+            {% for error in form.permissions.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="admin-form-actions">
+            <a class="admin-button admin-button-secondary" href="{% if teacher %}{% url 'administrators:user_detail' teacher.pk %}{% else %}{% url 'administrators:user_list' %}{% endif %}">Cancel</a>
+            <button class="admin-button admin-button-primary" type="submit">{{ submit_label }}</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

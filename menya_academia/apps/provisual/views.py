@@ -26,13 +26,15 @@ def checkout(request, package_id):
                 package=package,
                 full_name=form.cleaned_data["full_name"],
                 phone_number=form.cleaned_data["phone_number"],
-                email=form.cleaned_data["email"],
                 provider=form.cleaned_data["provider"],
             )
         except PaymentGatewayNotConfigured as exc:
             form.add_error(None, str(exc))
         else:
-            messages.success(request, "Payment request started.")
+            messages.success(
+                request,
+                "Payment request started. After verified payment, your activation code will be sent to your phone number by SMS.",
+            )
             return redirect("activate_code")
     return render(
         request,

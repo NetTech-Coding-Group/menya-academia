@@ -67,6 +67,25 @@ class TeacherProfile(models.Model):
         related_name="teacher_profile",
     )
     teaching_subject = models.CharField(max_length=32, choices=Subject.choices)
+    teacher_role_title = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text="Role assigned by the administrator, for example Class Teacher or Head of Department.",
+    )
+    responsibilities = models.TextField(
+        blank=True,
+        help_text="Responsibilities assigned by the administrator.",
+    )
+    assigned_subjects = models.TextField(
+        blank=True,
+        help_text="Subjects assigned by the administrator (one per line or comma-separated).",
+    )
+    assigned_classes = models.ManyToManyField(
+        "courses.Course",
+        blank=True,
+        related_name="assigned_teachers",
+        help_text="Classes or courses this teacher is assigned to manage.",
+    )
     qualifications = models.TextField()
     teaching_experience = models.TextField(blank=True)
     institution = models.CharField(max_length=180, blank=True)
@@ -101,10 +120,21 @@ class TeacherProfile(models.Model):
     def is_verified_teacher(self):
         return self.application_status == self.ApplicationStatus.APPROVED
 
+    @property
+    def subject_list(self):
+        raw = (self.assigned_subjects or "").replace("\r", "\n")
+        parts = []
+        for chunk in raw.split("\n"):
+            parts.extend([item.strip() for item in chunk.split(",")])
+        values = [item for item in parts if item]
+        return values or [self.get_teaching_subject_display()]
+
+    @property
+    def responsibility_list(self):
+        return [line.strip() for line in (self.responsibilities or "").splitlines() if line.strip()]
+
     def __str__(self):
-        return f"{self.user.full_name} — {self.get_application_status_display()}"
-
-
+        return f"{self.user.full_name} - {self.get_application_status_display()}"
 class TeacherSupportingDocument(models.Model):
     application = models.ForeignKey(
         TeacherProfile,

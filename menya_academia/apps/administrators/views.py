@@ -26,6 +26,8 @@ from apps.teachers.services import notify_teacher_application_decision
 from .forms import (
     ActivityLogFilterForm,
     PermissionAssignmentForm,
+    TeacherAdminCreateForm,
+    TeacherAdminEditForm,
     TeacherApplicationRejectionForm,
     UserEditForm,
 )
@@ -121,11 +123,21 @@ def user_list(request):
 @admin_required
 def user_detail(request, user_id):
     target = get_object_or_404(User, pk=user_id)
+    teacher_profile = None
+    assigned_classes = []
+    if target.role == User.Role.TEACHER:
+        teacher_profile = TeacherProfile.objects.filter(user=target).prefetch_related(
+            "assigned_classes"
+        ).first()
+        if teacher_profile:
+            assigned_classes = teacher_profile.assigned_classes.filter(is_archived=False)
     return render(
         request,
         "administrators/user_detail.html",
         {
             "target": target,
+            "teacher_profile": teacher_profile,
+            "assigned_classes": assigned_classes,
             "permissions": target.granted_permissions.all(),
             "activities": ActivityLog.objects.filter(actor=target)[:10],
             "protected_account": (
@@ -137,22 +149,56 @@ def user_detail(request, user_id):
     )
 
 
+def _permission_groups():
+    return (
+        ("Courses", ("can_create_course", "can_edit_course", "can_delete_course", "can_publish_course")),
+        ("Lessons & materials", ("can_create_lesson", "can_edit_lesson", "can_delete_lesson", "can_upload_materials")),
+        ("Students", ("can_view_students", "can_manage_students", "can_view_student_progress")),
+        ("Exams", ("can_create_exams", "can_edit_exams", "can_delete_exams", "can_grade_exams")),
+        ("Assignments", ("can_create_assignments", "can_grade_assignments", "can_create_quizzes")),
+        ("Communication", ("can_send_messages", "can_send_announcements")),
+        ("Attendance & marks", ("can_record_attendance", "can_enter_marks", "can_monitor_performance")),
+        ("Reports", ("can_view_reports", "can_download_reports")),
+    )
+
+
+def _sync_teacher_permissions(teacher, selected_keys):
+    selected_keys = set(selected_keys or [])
+    existing_keys = set(
+        TeacherPermission.objects.filter(teacher=teacher).values_list(
+            "permission_key", flat=True
+        )
+    )
+    revoked = existing_keys - selected_keys
+    granted = selected_keys - existing_keys
+    if revoked:
+        TeacherPermission.objects.filter(
+            teacher=teacher, permission_key__in=revoked
+        ).delete()
+    TeacherPermission.objects.bulk_create(
+        [
+            TeacherPermission(teacher=teacher, permission_key=key)
+            for key in sorted(granted)
+        ]
+    )
+    return granted, revoked
+
+
 @admin_required
 def user_edit(request, user_id):
     target = get_object_or_404(User, pk=user_id)
     if target.is_staff or target.is_superuser or target.role == User.Role.ADMIN:
         messages.error(request, "Staff accounts must be managed in Django admin.")
         return redirect("administrators:user_detail", user_id=target.pk)
+    if target.role == User.Role.TEACHER:
+        return redirect("administrators:teacher_edit", user_id=target.pk)
 
     form = UserEditForm(request.POST or None, instance=target)
     if request.method == "POST" and form.is_valid():
-        if (
-            target.role != User.Role.TEACHER
-            and form.cleaned_data["role"] == User.Role.TEACHER
-        ):
+        if form.cleaned_data["role"] == User.Role.TEACHER:
             form.add_error(
                 "role",
-                "Teacher accounts must apply and be approved through Teacher Applications.",
+                "Use 'Add teacher' or the teacher management form to create and manage teacher accounts.",
             )
             return render(
                 request,
@@ -160,23 +206,8 @@ def user_edit(request, user_id):
                 {"form": form, "target": target},
             )
         changed_fields = tuple(form.changed_data)
-        previous_role = target.role
         with transaction.atomic():
             target = form.save()
-            if previous_role == User.Role.TEACHER and target.role != User.Role.TEACHER:
-                revoked_count, _ = TeacherPermission.objects.filter(
-                    teacher=target
-                ).delete()
-                if revoked_count:
-                    record_activity(
-                        request.user,
-                        "permissions.revoked",
-                        f"Revoked teacher permissions for {target.full_name} after a role change.",
-                    )
-                TeacherProfile.objects.filter(user=target).update(
-                    application_status=TeacherProfile.ApplicationStatus.SUSPENDED,
-                    updated_at=timezone.now(),
-                )
             if changed_fields:
                 record_activity(
                     request.user,
@@ -191,6 +222,178 @@ def user_edit(request, user_id):
         request,
         "administrators/user_form.html",
         {"form": form, "target": target},
+    )
+
+
+@admin_required
+def teacher_create(request):
+    form = TeacherAdminCreateForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            teacher = User.objects.create_user(
+                email=form.cleaned_data["email"],
+                username=form.cleaned_data["username"],
+                full_name=form.cleaned_data["full_name"],
+                phone_number=form.cleaned_data["phone_number"],
+                password=form.cleaned_data["password1"],
+                role=User.Role.TEACHER,
+                preferred_language=form.cleaned_data["preferred_language"],
+                is_email_verified=form.cleaned_data["is_email_verified"],
+                is_active=form.cleaned_data["is_active"],
+            )
+            profile = TeacherProfile.objects.create(
+                user=teacher,
+                teaching_subject=form.cleaned_data["teaching_subject"],
+                teacher_role_title=form.cleaned_data.get("teacher_role_title", ""),
+                assigned_subjects=form.cleaned_data.get("assigned_subjects", ""),
+                responsibilities=form.cleaned_data.get("responsibilities", ""),
+                qualifications=form.cleaned_data.get("qualifications", "")
+                or "Added by administrator.",
+                teaching_experience=form.cleaned_data.get("teaching_experience", ""),
+                institution=form.cleaned_data.get("institution", ""),
+                terms_accepted_at=timezone.now(),
+                application_status=TeacherProfile.ApplicationStatus.APPROVED,
+                approved_by=request.user,
+                approval_date=timezone.now(),
+            )
+            profile.assigned_classes.set(form.cleaned_data.get("assigned_classes") or [])
+            granted, _ = _sync_teacher_permissions(
+                teacher, form.cleaned_data.get("permissions") or []
+            )
+            record_activity(
+                request.user,
+                "teacher.created",
+                f"Added teacher account for {teacher.full_name} with {len(granted)} permissions and {profile.assigned_classes.count()} assigned classes.",
+            )
+        messages.success(
+            request,
+            "Teacher account created. Share the temporary password securely and ask the teacher to change it after signing in.",
+        )
+        return redirect("administrators:user_detail", user_id=teacher.pk)
+
+    choices = dict(TeacherPermission.PERMISSION_KEYS)
+    permission_groups = [
+        {"title": title, "permissions": [(key, choices[key]) for key in keys if key in choices]}
+        for title, keys in _permission_groups()
+    ]
+    return render(
+        request,
+        "administrators/teacher_form.html",
+        {
+            "form": form,
+            "page_title": "Add teacher",
+            "page_intro": "Create a teacher account, assign responsibilities, classes, and permissions.",
+            "submit_label": "Create teacher account",
+            "permission_groups": permission_groups,
+        },
+    )
+
+
+@admin_required
+def teacher_edit(request, user_id):
+    teacher = get_object_or_404(User, pk=user_id, role=User.Role.TEACHER)
+    if teacher.is_staff or teacher.is_superuser:
+        messages.error(request, "Staff accounts must be managed in Django admin.")
+        return redirect("administrators:user_detail", user_id=teacher.pk)
+    profile, _ = TeacherProfile.objects.get_or_create(
+        user=teacher,
+        defaults={
+            "teaching_subject": TeacherProfile.Subject.OTHER,
+            "qualifications": "Added or recovered by administrator.",
+            "application_status": TeacherProfile.ApplicationStatus.APPROVED,
+            "approved_by": request.user,
+            "approval_date": timezone.now(),
+            "terms_accepted_at": timezone.now(),
+        },
+    )
+    initial = {
+        "full_name": teacher.full_name,
+        "username": teacher.username,
+        "email": teacher.email,
+        "phone_number": teacher.phone_number,
+        "preferred_language": teacher.preferred_language,
+        "is_email_verified": teacher.is_email_verified,
+        "is_active": teacher.is_active,
+        "teaching_subject": profile.teaching_subject,
+        "teacher_role_title": profile.teacher_role_title,
+        "assigned_subjects": profile.assigned_subjects,
+        "responsibilities": profile.responsibilities,
+        "assigned_classes": profile.assigned_classes.all(),
+        "qualifications": profile.qualifications,
+        "teaching_experience": profile.teaching_experience,
+        "institution": profile.institution,
+        "permissions": list(
+            TeacherPermission.objects.filter(teacher=teacher).values_list(
+                "permission_key", flat=True
+            )
+        ),
+    }
+    form = TeacherAdminEditForm(
+        request.POST or None,
+        teacher=teacher,
+        initial=initial,
+    )
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            teacher.full_name = form.cleaned_data["full_name"]
+            teacher.username = form.cleaned_data["username"]
+            teacher.email = form.cleaned_data["email"].strip().lower()
+            teacher.phone_number = form.cleaned_data["phone_number"]
+            teacher.preferred_language = form.cleaned_data["preferred_language"]
+            teacher.is_email_verified = form.cleaned_data["is_email_verified"]
+            teacher.is_active = form.cleaned_data["is_active"]
+            teacher.save()
+            profile.teaching_subject = form.cleaned_data["teaching_subject"]
+            profile.teacher_role_title = form.cleaned_data.get("teacher_role_title", "")
+            profile.assigned_subjects = form.cleaned_data.get("assigned_subjects", "")
+            profile.responsibilities = form.cleaned_data.get("responsibilities", "")
+            profile.qualifications = form.cleaned_data.get("qualifications", "") or profile.qualifications
+            profile.teaching_experience = form.cleaned_data.get("teaching_experience", "")
+            profile.institution = form.cleaned_data.get("institution", "")
+            if teacher.is_active and profile.application_status == TeacherProfile.ApplicationStatus.SUSPENDED:
+                profile.application_status = TeacherProfile.ApplicationStatus.APPROVED
+                profile.approved_by = request.user
+                profile.approval_date = timezone.now()
+                profile.rejection_reason = ""
+            elif not teacher.is_active and profile.application_status == TeacherProfile.ApplicationStatus.APPROVED:
+                profile.application_status = TeacherProfile.ApplicationStatus.SUSPENDED
+            profile.save()
+            profile.assigned_classes.set(form.cleaned_data.get("assigned_classes") or [])
+            granted, revoked = _sync_teacher_permissions(
+                teacher, form.cleaned_data.get("permissions") or []
+            )
+            changes = []
+            if granted:
+                changes.append(f"granted {len(granted)} permissions")
+            if revoked:
+                changes.append(f"revoked {len(revoked)} permissions")
+            record_activity(
+                request.user,
+                "teacher.updated",
+                f"Updated teacher {teacher.full_name}: {profile.assigned_classes.count()} assigned classes"
+                + (f", {', '.join(changes)}" if changes else "")
+                + ".",
+            )
+        messages.success(request, "Teacher information, responsibilities, and access updated.")
+        return redirect("administrators:user_detail", user_id=teacher.pk)
+
+    choices = dict(TeacherPermission.PERMISSION_KEYS)
+    permission_groups = [
+        {"title": title, "permissions": [(key, choices[key]) for key in keys if key in choices]}
+        for title, keys in _permission_groups()
+    ]
+    return render(
+        request,
+        "administrators/teacher_form.html",
+        {
+            "form": form,
+            "teacher": teacher,
+            "profile": profile,
+            "page_title": "Edit teacher",
+            "page_intro": "Update teacher information, responsibilities, assigned classes, and permissions.",
+            "submit_label": "Save teacher changes",
+            "permission_groups": permission_groups,
+        },
     )
 
 
@@ -520,26 +723,7 @@ def teacher_permissions(request):
             selected_teacher = form.cleaned_data["teacher"]
             selected_keys = set(form.cleaned_data["permissions"])
             with transaction.atomic():
-                existing_keys = set(
-                    TeacherPermission.objects.filter(teacher=selected_teacher)
-                    .values_list("permission_key", flat=True)
-                )
-                revoked = existing_keys - selected_keys
-                granted = selected_keys - existing_keys
-                if revoked:
-                    TeacherPermission.objects.filter(
-                        teacher=selected_teacher,
-                        permission_key__in=revoked,
-                    ).delete()
-                TeacherPermission.objects.bulk_create(
-                    [
-                        TeacherPermission(
-                            teacher=selected_teacher,
-                            permission_key=key,
-                        )
-                        for key in sorted(granted)
-                    ]
-                )
+                granted, revoked = _sync_teacher_permissions(selected_teacher, selected_keys)
                 if granted or revoked:
                     changes = []
                     if granted:
@@ -571,15 +755,6 @@ def teacher_permissions(request):
                     .values_list("permission_key", flat=True)
                 )
 
-    permission_groups = (
-        ("Courses", ("can_create_course", "can_edit_course", "can_delete_course", "can_publish_course")),
-        ("Lessons & materials", ("can_create_lesson", "can_edit_lesson", "can_delete_lesson", "can_upload_materials")),
-        ("Students", ("can_view_students", "can_manage_students", "can_view_student_progress")),
-        ("Exams", ("can_create_exams", "can_edit_exams", "can_delete_exams", "can_grade_exams")),
-        ("Assignments", ("can_create_assignments", "can_grade_assignments", "can_create_quizzes")),
-        ("Communication", ("can_send_messages", "can_send_announcements")),
-        ("Reports", ("can_view_reports", "can_download_reports")),
-    )
     choices = dict(TeacherPermission.PERMISSION_KEYS)
     groups = [
         {
@@ -588,7 +763,7 @@ def teacher_permissions(request):
                 (key, choices[key]) for key in keys if key in choices
             ],
         }
-        for title, keys in permission_groups
+        for title, keys in _permission_groups()
     ]
     selected_permission_count = len(form["permissions"].value() or [])
     return render(

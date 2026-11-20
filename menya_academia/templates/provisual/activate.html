@@ -9,7 +9,7 @@
         <div class="form-card form-card-centered">
             <p class="eyebrow">{{ "Traffic rules track"|tr }}</p>
             <h1>{{ "Enter your traffic exam activation code"|tr }}</h1>
-            <p>{{ "Your code is verified before a traffic-rules practice exam begins. Only codes issued after confirmed payment can unlock access. This is separate from school course enrollment."|tr }}</p>
+            <p>{{ "After your traffic exam payment is verified, your activation code is sent to your phone number by SMS. Enter that code here to start your exam. Email is not used for code delivery."|tr }}</p>
             <form method="post" novalidate>
                 {% csrf_token %}
                 {% for field in form %}

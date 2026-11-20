@@ -1,0 +1,25 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Marks — MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:workspace' %}">← Teacher dashboard</a>
+    <p class="learning-eyebrow">MARKS</p>
+    <h1>Enter and update marks</h1>
+    <p class="workspace-form-intro">Select an assigned class to record assessment marks for students.</p>
+    <div class="teacher-course-list">
+        {% for course in courses %}
+        <article class="teacher-course-card">
+            <div class="teacher-course-main">
+                <h3><a href="{% url 'teacher_workspace:marks_manage' course.pk %}">{{ course.title }}</a></h3>
+                <p>{{ course.short_description }}</p>
+                <a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:marks_manage' course.pk %}">Manage marks</a>
+            </div>
+        </article>
+        {% empty %}
+        <div class="learning-empty"><h2>No assigned classes</h2><p>You need an assigned class before you can enter marks.</p></div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

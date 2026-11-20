@@ -25,6 +25,9 @@ class TeacherPermission(models.Model):
         ("can_create_quizzes", "Create quizzes"),
         ("can_send_messages", "Send messages"),
         ("can_send_announcements", "Create announcements"),
+        ("can_record_attendance", "Record student attendance"),
+        ("can_enter_marks", "Enter and update marks"),
+        ("can_monitor_performance", "Monitor student performance"),
         ("can_view_reports", "View reports"),
         ("can_download_reports", "Download reports"),
     )

@@ -17,7 +17,11 @@
     </div>
     <div class="profile-actions">
         {% if not protected_account %}
+        {% if target.role == "TEACHER" %}
+        <a class="admin-button admin-button-primary" href="{% url 'administrators:teacher_edit' target.pk %}">Edit teacher</a>
+        {% else %}
         <a class="admin-button admin-button-primary" href="{% url 'administrators:user_edit' target.pk %}">Edit profile</a>
+        {% endif %}
         <form method="post" action="{% url 'administrators:user_status' target.pk %}">{% csrf_token %}<button class="admin-button admin-button-secondary" type="submit">{% if target.is_active %}Deactivate account{% else %}Activate account{% endif %}</button></form>
         <form method="post" action="{% url 'administrators:user_password_reset' target.pk %}">{% csrf_token %}<button class="admin-button admin-button-secondary" type="submit">Initiate password reset</button></form>
         <a class="admin-button admin-button-danger" href="{% url 'administrators:user_delete' target.pk %}">Delete user</a>
@@ -26,13 +30,30 @@
         {% endif %}
     </div>
 </section>
-{% if target.role == "TEACHER" %}
+{% if target.role == "TEACHER" and teacher_profile %}
+<section class="admin-panel-card">
+    <div class="admin-section-heading"><div><p class="admin-eyebrow">TEACHING ASSIGNMENT</p><h2>Role, subjects, and responsibilities</h2></div><a class="admin-text-link" href="{% url 'administrators:teacher_edit' target.pk %}">Edit assignment <span aria-hidden="true">→</span></a></div>
+    <div class="profile-facts">
+        <div><span>Assigned role</span><strong>{{ teacher_profile.teacher_role_title|default:"Not assigned" }}</strong></div>
+        <div><span>Primary subject</span><strong>{{ teacher_profile.get_teaching_subject_display }}</strong></div>
+        <div><span>Status</span><strong>{{ teacher_profile.get_application_status_display }}</strong></div>
+    </div>
+    <div class="detail-stack">
+        <div><span class="stat-label">Assigned subjects</span><div class="permission-chip-list">{% for subject in teacher_profile.subject_list %}<span class="permission-chip">{{ subject }}</span>{% empty %}<p class="admin-muted">No subjects assigned.</p>{% endfor %}</div></div>
+        <div><span class="stat-label">Responsibilities</span>{% if teacher_profile.responsibility_list %}<ul class="detail-list">{% for item in teacher_profile.responsibility_list %}<li>{{ item }}</li>{% endfor %}</ul>{% elif teacher_profile.responsibilities %}<p>{{ teacher_profile.responsibilities|linebreaksbr }}</p>{% else %}<p class="admin-muted">No responsibilities assigned.</p>{% endif %}</div>
+        <div><span class="stat-label">Assigned classes/courses</span><div class="permission-chip-list">{% for course in assigned_classes %}<span class="permission-chip">{{ course.title }}</span>{% empty %}<p class="admin-muted">No classes assigned.</p>{% endfor %}</div></div>
+    </div>
+</section>
 <section class="admin-panel-card">
     <div class="admin-section-heading"><div><p class="admin-eyebrow">ACCESS CONTROL</p><h2>Assigned permissions</h2></div><a class="admin-text-link" href="{% url 'administrators:teacher_permissions' %}?teacher={{ target.pk }}">Manage permissions <span aria-hidden="true">→</span></a></div>
     <div class="permission-chip-list">{% for permission in permissions %}<span class="permission-chip">{{ permission.get_permission_key_display }}</span>{% empty %}<p class="admin-muted">No teacher permissions have been granted.</p>{% endfor %}</div>
 </section>
-{% endif %}
+{% elif target.role == "TEACHER" %}
 <section class="admin-panel-card">
+    <div class="admin-section-heading"><div><p class="admin-eyebrow">ACCESS CONTROL</p><h2>Assigned permissions</h2></div><a class="admin-text-link" href="{% url 'administrators:teacher_permissions' %}?teacher={{ target.pk }}">Manage permissions <span aria-hidden="true">→</span></a></div>
+    <div class="permission-chip-list">{% for permission in permissions %}<span class="permission-chip">{{ permission.get_permission_key_display }}</span>{% empty %}<p class="admin-muted">No teacher permissions have been granted.</p>{% endfor %}</div>
+</section>
+{% endif %}<section class="admin-panel-card">
     <div class="admin-section-heading"><div><p class="admin-eyebrow">AUDIT TRAIL</p><h2>Recent activity by this user</h2></div><a class="admin-text-link" href="{% url 'administrators:activity_logs' %}?search={{ target.email|urlencode }}">View logs <span aria-hidden="true">→</span></a></div>
     <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Activity</th><th>Date & time</th><th>Status</th></tr></thead><tbody>
     {% for activity in activities %}<tr><td>{{ activity.description }}</td><td>{{ activity.created_at|date:"d M Y, H:i" }}</td><td><span class="status-pill status-{{ activity.status|lower }}">{{ activity.get_status_display }}</span></td></tr>{% empty %}<tr><td class="table-empty" colspan="3">No activity recorded for this user.</td></tr>{% endfor %}

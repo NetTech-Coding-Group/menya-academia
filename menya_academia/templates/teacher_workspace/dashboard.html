@@ -1,49 +1,103 @@
 {% extends "base/base.html" %}
 {% load static humanize %}
-{% block title %}Teacher workspace · MENYA ACADEMIA{% endblock %}
+{% block title %}Teacher Dashboard — MENYA ACADEMIA{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
 {% block content %}
 <section class="workspace-shell">
     <header class="workspace-heading">
-        <div><p class="learning-eyebrow">TEACHER WORKSPACE</p><h1>Welcome, {{ request.user.full_name }}</h1><p>Prepare your courses and support your learners.</p></div>
+        <div>
+            <p class="learning-eyebrow">TEACHER DASHBOARD</p>
+            <h1>Welcome, {{ request.user.full_name }}</h1>
+            <p>{% if profile and profile.teacher_role_title %}{{ profile.teacher_role_title }} · {% endif %}Your personalized workspace shows only the classes, tasks, and tools assigned to you.</p>
+        </div>
         <a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:permissions' %}">My permissions ({{ granted_count }})</a>
     </header>
+
     <nav class="workspace-nav" aria-label="Teacher navigation">
         <a class="is-current" href="{% url 'teacher_workspace:workspace' %}">Dashboard</a>
-        <a href="#my-courses">My courses</a>
-        {% if can_view_students %}<a href="#my-courses">My students</a>{% endif %}
-        {% if can_grade_assignments %}<a href="{% url 'teacher_workspace:assignment_submissions' %}">Assignments</a>{% endif %}
-        <a href="{% url 'teacher_workspace:permissions' %}">My permissions</a>
+        <a href="#my-classes">My classes</a>
+        {% if can_record_attendance %}<a href="{% url 'teacher_workspace:attendance_select' %}">Attendance</a>{% endif %}
+        {% if can_enter_marks %}<a href="{% url 'teacher_workspace:marks_select' %}">Marks</a>{% endif %}
+        {% if can_monitor_performance %}<a href="{% url 'teacher_workspace:performance_select' %}">Performance</a>{% endif %}
+        {% if can_grade_assignments %}<a href="{% url 'teacher_workspace:assignment_submissions' %}">Assignments{% if pending_submissions %} ({{ pending_submissions }}){% endif %}</a>{% endif %}
         <a href="{% url 'accounts:profile' %}">My profile</a>
     </nav>
+
     <div class="workspace-stats">
-        <article><span>My courses</span><strong>{{ course_count }}</strong><small>Courses you created</small></article>
-        <article><span>Course content</span><strong>{% for course in courses %}{{ course.sections.count }}{% if not forloop.last %}+{% endif %}{% empty %}0{% endfor %}</strong><small>Sections across your workspace</small></article>
-        <article><span>My permissions</span><strong>{{ granted_count }}</strong><small>Capabilities assigned by an admin</small></article>
+        <article><span>Assigned classes</span><strong>{{ course_count }}</strong><small>Classes/courses you can manage</small></article>
+        <article><span>My permissions</span><strong>{{ granted_count }}</strong><small>Capabilities granted by admin</small></article>
+        {% if can_grade_assignments %}<article><span>Pending grading</span><strong>{{ pending_submissions }}</strong><small>Assignment submissions to review</small></article>{% endif %}
     </div>
-    <section id="my-courses" class="workspace-panel">
-        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">YOUR TEACHING</p><h2>My courses</h2></div>{% if can_create_course %}<a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:course_create' %}">＋ Create course</a>{% endif %}</div>
+
+    {% if profile %}
+    <section class="workspace-panel">
+        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">MY ASSIGNMENT</p><h2>Role, subjects, and responsibilities</h2></div></div>
+        <div class="profile-facts">
+            <div><span>Assigned role</span><strong>{{ profile.teacher_role_title|default:"Not specified" }}</strong></div>
+            <div><span>Primary subject</span><strong>{{ profile.get_teaching_subject_display }}</strong></div>
+        </div>
+        <div class="detail-stack">
+            <div><span class="stat-label">Assigned subjects</span><div class="permission-chip-list">{% for subject in profile.subject_list %}<span class="permission-chip">{{ subject }}</span>{% empty %}<span class="permission-none">No subjects assigned</span>{% endfor %}</div></div>
+            <div><span class="stat-label">Responsibilities</span>{% if profile.responsibility_list %}<ul class="detail-list">{% for item in profile.responsibility_list %}<li>{{ item }}</li>{% endfor %}</ul>{% elif profile.responsibilities %}<p>{{ profile.responsibilities|linebreaksbr }}</p>{% else %}<p class="admin-muted">No responsibilities assigned yet.</p>{% endif %}</div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if quick_actions %}
+    <section class="workspace-panel">
+        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">TASKS</p><h2>Quick actions</h2></div></div>
+        <div class="workspace-secondary-grid">
+            {% for action in quick_actions %}
+            <a class="workspace-action-card" href="{% url action.url_name %}">
+                <strong>{{ action.label }}</strong>
+                <small>{{ action.description }}</small>
+                <span>Open →</span>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section id="my-classes" class="workspace-panel">
+        <div class="workspace-panel-heading">
+            <div><p class="learning-eyebrow">MY CLASSES</p><h2>Assigned classes</h2><p>Manage only the classes assigned to you by the administrator.</p></div>
+            {% if can_create_course %}<a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:course_create' %}">Create class/course</a>{% endif %}
+        </div>
         <div class="teacher-course-list">
             {% for course in courses %}
             <article class="teacher-course-card">
-                <div class="teacher-course-art">{% if course.cover_image %}<img src="{{ course.cover_image.url }}" alt="">{% else %}<span>M</span>{% endif %}</div>
+                <div class="teacher-course-art">{% if course.cover_image %}<img src="{{ course.cover_image.url }}" alt="">{% else %}<span>{{ course.title|slice:":1"|upper }}</span>{% endif %}</div>
                 <div class="teacher-course-main">
                     <div class="teacher-course-title"><span class="course-level course-level-inline">{{ course.get_education_level_display }}</span><span class="course-status {% if course.is_published %}is-published{% endif %}">{% if course.is_published %}Published{% else %}Draft{% endif %}</span></div>
                     <h3><a href="{% url 'teacher_workspace:course_detail' course.pk %}">{{ course.title }}</a></h3>
                     <p>{{ course.short_description }}</p>
                     <div class="teacher-course-meta"><span>{{ course.price_rwf|intcomma }} RWF</span><span>Updated {{ course.updated_at|date:"d M Y" }}</span></div>
+                    <div class="inline-actions class-quick-links">
+                        <a href="{% url 'teacher_workspace:course_detail' course.pk %}">Manage</a>
+                        {% if can_view_students %}<a href="{% url 'teacher_workspace:course_students' course.pk %}">Students</a>{% endif %}
+                        {% if can_record_attendance %}<a href="{% url 'teacher_workspace:attendance_manage' course.pk %}">Attendance</a>{% endif %}
+                        {% if can_enter_marks %}<a href="{% url 'teacher_workspace:marks_manage' course.pk %}">Marks</a>{% endif %}
+                        {% if can_monitor_performance %}<a href="{% url 'teacher_workspace:performance_course' course.pk %}">Performance</a>{% endif %}
+                    </div>
                 </div>
-                <a class="teacher-course-open" href="{% url 'teacher_workspace:course_detail' course.pk %}" aria-label="Manage {{ course.title }}">Manage →</a>
             </article>
             {% empty %}
-            <div class="learning-empty"><span>▤</span><h2>No courses yet</h2><p>{% if can_create_course %}Start with a course title, education level, description, and price.{% else %}Ask your administrator to grant the Create courses permission.{% endif %}</p>{% if can_create_course %}<a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:course_create' %}">Create your first course</a>{% endif %}</div>
+            <div class="learning-empty">
+                <h2>No classes assigned yet</h2>
+                <p>{% if can_create_course %}Create a class/course or ask your administrator to assign classes to you.{% else %}Ask your administrator to assign classes and the permissions you need.{% endif %}</p>
+            </div>
             {% endfor %}
         </div>
     </section>
+
     <section class="workspace-panel permissions-overview">
-        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">ACCESS</p><h2>What you can do</h2></div><a class="learning-inline-link" href="{% url 'teacher_workspace:permissions' %}">See all permissions →</a></div>
-        <div class="workspace-permission-grid">{% for title,items in permission_groups %}<article><h3>{{ title }}</h3>{% for key,label in items %}<span>{{ label }}</span>{% empty %}<span class="permission-none">No permissions assigned</span>{% endfor %}</article>{% endfor %}</div>
-        <p class="learning-disclaimer">Your course and student information is limited to courses you teach. System settings and platform-wide payment/revenue information are administrator-only.</p>
+        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">ACCESS</p><h2>Features available to you</h2></div><a class="learning-inline-link" href="{% url 'teacher_workspace:permissions' %}">View all permissions →</a></div>
+        <div class="workspace-permission-grid">
+            {% for title, items in permission_groups %}
+            <article><h3>{{ title }}</h3>{% for key,label in items %}<span>{{ label }}</span>{% empty %}<span class="permission-none">No permissions assigned</span>{% endfor %}</article>
+            {% endfor %}
+        </div>
+        <p class="learning-disclaimer">Access is limited to your assigned classes and the permissions granted by the administrator. Platform-wide settings and payment information are administrator-only.</p>
     </section>
 </section>
 {% endblock %}
