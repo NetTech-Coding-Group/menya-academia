@@ -64,6 +64,13 @@ class ProfileForm(forms.ModelForm):
         return image
 
 
+class ResendVerificationForm(forms.Form):
+    email = forms.EmailField(label="Email address")
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
+
+
 class AdminUserCreationForm(UserCreationForm):
     class Meta:
         model = User

@@ -1,0 +1,26 @@
+{% extends "base/base.html" %}
+{% load ui_translations %}
+{% block title %}{{ "Resend verification email"|tr }} | MENYA ACADEMIA{% endblock %}
+{% block content %}
+<section class="section section-narrow">
+    <div class="container">
+        <div class="form-card form-card-centered">
+            <p class="eyebrow">{{ "Account verification"|tr }}</p>
+            <h1>{{ "Resend verification email"|tr }}</h1>
+            <p>{{ "Enter your account email address. If your account needs verification, we will send a new verification link."|tr }}</p>
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="form-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label|tr }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<p class="field-error">{{ error|tr }}</p>{% endfor %}
+                    </div>
+                {% endfor %}
+                <button class="button button-block" type="submit">{{ "Send verification link"|tr }}</button>
+            </form>
+            <p class="auth-switch" style="margin-top:16px;"><a href="{% url 'accounts:login' %}">{{ "Back to sign in"|tr }}</a></p>
+        </div>
+    </div>
+</section>
+{% endblock %}

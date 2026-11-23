@@ -1,7 +1,11 @@
+import hashlib
+import logging
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.core import signing
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
@@ -14,9 +18,16 @@ from apps.teachers.models import TeacherProfile
 
 from django.contrib.auth import views as auth_views
 
-from .forms import EmailAuthenticationForm, ProfileForm, RegistrationForm
+from .forms import (
+    EmailAuthenticationForm,
+    ProfileForm,
+    RegistrationForm,
+    ResendVerificationForm,
+)
 from .models import User
 from .templatetags.ui_translations import translate_ui
+
+logger = logging.getLogger(__name__)
 
 
 class PasswordResetView(auth_views.PasswordResetView):
@@ -34,6 +45,28 @@ class PasswordResetView(auth_views.PasswordResetView):
         }
         form.save(**opts)
         return redirect(self.get_success_url())
+
+
+def _build_site_url(path):
+    scheme = getattr(settings, "SITE_SCHEME", "http").strip() or "http"
+    domain = getattr(settings, "SITE_DOMAIN", "127.0.0.1:8000").strip().strip("/")
+    return f"{scheme}://{domain}{path}"
+
+
+def _send_verification_email(request, user):
+    token = signing.TimestampSigner(salt="accounts.email-verification").sign(str(user.pk))
+    verify_url = _build_site_url(reverse("accounts:verify_email", args=(token,)))
+    send_mail(
+        translate_ui("Verify your MENYA ACADEMIA account", request.LANGUAGE_CODE),
+        (
+            f"{translate_ui('Hello', request.LANGUAGE_CODE)} {user.full_name}, "
+            f"{translate_ui('verify your email address using this link:', request.LANGUAGE_CODE)} "
+            f"{verify_url}"
+        ),
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=False,
+    )
 
 
 def set_language(request):
@@ -83,23 +116,7 @@ def register(request):
             email=user.email,
             defaults={"primary": True, "verified": False},
         )
-        token = signing.TimestampSigner(salt="accounts.email-verification").sign(
-            str(user.pk)
-        )
-        verify_url = request.build_absolute_uri(
-            reverse("accounts:verify_email", args=(token,))
-        )
-        send_mail(
-            translate_ui("Verify your MENYA ACADEMIA account", request.LANGUAGE_CODE),
-            (
-                f"{translate_ui('Hello', request.LANGUAGE_CODE)} {user.full_name}, "
-                f"{translate_ui('verify your email address using this link:', request.LANGUAGE_CODE)} "
-                f"{verify_url}"
-            ),
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=False,
-        )
+        _send_verification_email(request, user)
         messages.success(
             request,
             translate_ui(
@@ -238,3 +255,65 @@ def force_password_change(request):
         "accounts/force_password_change.html",
         {"form": form, "next_url": request.POST.get("next") or request.GET.get("next", "")},
     )
+
+
+def _resend_verification_rate_limited(request, email):
+    window = int(getattr(settings, "RESEND_VERIFICATION_WINDOW_SECONDS", 600))
+    email_limit = int(getattr(settings, "RESEND_VERIFICATION_EMAIL_LIMIT", 3))
+    ip_limit = int(getattr(settings, "RESEND_VERIFICATION_IP_LIMIT", 5))
+    ip = (
+        request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+        or request.META.get("REMOTE_ADDR", "unknown").strip()
+        or "unknown"
+    )
+    email_hash = hashlib.sha256(email.lower().encode("utf-8")).hexdigest()
+    ip_hash = hashlib.sha256(ip.encode("utf-8")).hexdigest()
+    keys = [
+        (f"accounts:resend-verification:email:{email_hash}", email_limit),
+        (f"accounts:resend-verification:ip:{ip_hash}", ip_limit),
+    ]
+
+    for key, limit in keys:
+        if int(cache.get(key, 0)) >= limit:
+            return True
+
+    for key, _ in keys:
+        added = cache.add(key, 1, window)
+        if not added:
+            try:
+                cache.incr(key)
+            except ValueError:
+                current = int(cache.get(key, 0))
+                cache.set(key, current + 1, window)
+    return False
+
+
+def resend_verification_email(request):
+    if request.user.is_authenticated:
+        return redirect("home")
+
+    form = ResendVerificationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        email = form.cleaned_data["email"]
+        generic_message = translate_ui(
+            "If an account with that email address needs verification, a new verification link has been sent.",
+            request.LANGUAGE_CODE,
+        )
+
+        if _resend_verification_rate_limited(request, email):
+            messages.success(request, generic_message)
+            return redirect("accounts:login")
+
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
+        if user and not user.is_email_verified:
+            try:
+                _send_verification_email(request, user)
+            except Exception as exc:
+                logger.error(
+                    "Verification email delivery failed during resend request (%s).",
+                    type(exc).__name__,
+                )
+        messages.success(request, generic_message)
+        return redirect("accounts:login")
+
+    return render(request, "accounts/resend_verification.html", {"form": form})
