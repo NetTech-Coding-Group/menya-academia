@@ -19,7 +19,7 @@
             <h3>Account information</h3>
             <div class="admin-form-grid">
                 {% for field in form %}
-                    {% if field.name == 'full_name' or field.name == 'username' or field.name == 'email' or field.name == 'phone_number' or field.name == 'preferred_language' or field.name == 'password1' or field.name == 'password2' or field.name == 'is_email_verified' or field.name == 'is_active' %}
+                    {% if field.name == 'full_name' or field.name == 'phone_number' or field.name == 'email' or field.name == 'username' or field.name == 'password1' or field.name == 'password2' or field.name == 'preferred_language' or field.name == 'is_email_verified' or field.name == 'is_active' %}
                     <div class="admin-field {% if field.field.widget.input_type == 'checkbox' %}admin-field-checkbox{% endif %}">
                         {% if field.field.widget.input_type == 'checkbox' %}{{ field }}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% else %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% endif %}
                         {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
@@ -31,10 +31,11 @@
         </div>
 
         <div class="form-section-block">
-            <h3>Role, subjects, and responsibilities</h3>
+            <h3>Teaching assignment</h3>
+            <p class="admin-muted">Set the teacher's category, level, subjects, and classes. Traffic Rules Teachers can only teach Traffic Rules and must not be assigned academic levels.</p>
             <div class="admin-form-grid">
                 {% for field in form %}
-                    {% if field.name == 'teaching_subject' or field.name == 'teacher_role_title' or field.name == 'assigned_subjects' or field.name == 'responsibilities' or field.name == 'qualifications' or field.name == 'teaching_experience' or field.name == 'institution' %}
+                    {% if field.name == 'teaching_category' or field.name == 'teaching_level' or field.name == 'teacher_role_title' or field.name == 'assigned_subjects' or field.name == 'responsibilities' or field.name == 'qualifications' or field.name == 'teaching_experience' or field.name == 'institution' %}
                     <div class="admin-field admin-field-full">
                         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                         {{ field }}
@@ -47,7 +48,7 @@
         </div>
 
         <div class="form-section-block">
-            <h3>Assigned classes/courses</h3>
+            <h3>Assigned classes</h3>
             <p class="admin-muted">Select the classes or courses this teacher is responsible for. Teachers can only manage assigned classes according to their permissions.</p>
             <div class="checkbox-grid">
                 {% for checkbox in form.assigned_classes %}

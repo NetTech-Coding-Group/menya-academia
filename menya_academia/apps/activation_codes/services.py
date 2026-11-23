@@ -14,7 +14,7 @@ def activate_code(*, code_text, user=None):
     normalized_code = code_text.strip().upper()
     try:
         code = (
-            ActivationCode.objects.select_for_update()
+            ActivationCode.objects.select_for_update(of=("self",))
             .select_related("payment__package")
             .get(code=normalized_code)
         )

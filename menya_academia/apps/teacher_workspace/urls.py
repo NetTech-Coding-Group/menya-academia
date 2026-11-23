@@ -30,4 +30,8 @@ urlpatterns = [
     path("lessons/<uuid:lesson_id>/material/", views.private_lesson_material, name="private_lesson_material"),
     path("assignment-submissions/", views.assignment_submissions, name="assignment_submissions"),
     path("assignment-submissions/<int:submission_id>/grade/", views.submission_grade, name="submission_grade"),
+    path("exams/create/", views.exam_create, name="exam_create"),
+    path("questions/", views.question_bank, name="question_bank"),
+    path("questions/create/", views.question_create, name="question_create"),
+    path("questions/<int:question_id>/edit/", views.question_edit, name="question_edit"),
 ]

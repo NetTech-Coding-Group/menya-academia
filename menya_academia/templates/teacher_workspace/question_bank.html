@@ -1,0 +1,52 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Question Bank · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="container workspace-form-page">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:workspace' %}">← Back to Teacher Dashboard</a>
+    <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+        <div>
+            <p class="learning-eyebrow">QUESTION BANK</p>
+            <h1>Traffic-rule question bank</h1>
+            <p class="workspace-form-intro">Create and manage multiple-choice traffic-rule questions. These questions can be selected when creating an exam.</p>
+        </div>
+        <a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:question_create' %}">Create PROVISUAL Questions</a>
+    </div>
+
+    <div class="learning-form-card" style="margin-top:20px;">
+        {% if questions %}
+        <div style="overflow:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">ID</th>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">Ikibazo (Kinyarwanda)</th>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">Correct</th>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">Approval</th>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">Active</th>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for question in questions %}
+                    <tr>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;">#{{ question.id }}</td>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;">{{ question.text_rw|default:question.text_en|default:question.text_fr|truncatechars:120 }}</td>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;">
+                            {% for option in question.options.all %}{% if option.is_correct %}{{ option.letter }}{% endif %}{% endfor %}
+                        </td>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;">{{ question.get_approval_status_display }}</td>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;">{% if question.is_active %}Yes{% else %}No{% endif %}</td>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;"><a class="learning-inline-link" href="{% url 'teacher_workspace:question_edit' question.id %}">Edit</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="admin-muted">Nta bibazo bihari. Kanda "Create PROVISUAL Questions" kugira ngo wongere ibibazo 20.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -1,15 +1,18 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import include, path
 from apps.accounts.views import set_language
 
 
 urlpatterns = [
+    path("health", lambda request: JsonResponse({"status": "ok"})),
     path("admin/", admin.site.urls),
     path("i18n/setlang/", set_language, name="set_language"),
     path("admin-panel/", include("apps.administrators.urls")),
     path("teacher/", include("apps.teacher_workspace.urls")),
+    path("messages/", include("apps.messaging.urls")),
     path("", include("apps.teachers.urls")),
     path("courses/", include("apps.courses.urls")),
     path("", include("apps.enrollments.urls")),

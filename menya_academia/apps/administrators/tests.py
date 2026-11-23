@@ -123,18 +123,12 @@ class AdminPanelTests(TestCase):
             },
         )
 
-        self.assertEqual(response.status_code, 302)
+        # Teachers are managed through the dedicated teacher management flow.
+        self.assertRedirects(response, reverse("administrators:teacher_edit", args=(self.teacher.pk,)))
         self.teacher.refresh_from_db()
-        self.assertEqual(self.teacher.role, User.Role.STUDENT)
-        self.assertFalse(
-            TeacherPermission.objects.filter(teacher=self.teacher).exists()
-        )
+        self.assertEqual(self.teacher.role, User.Role.TEACHER)
         self.assertTrue(
-            ActivityLog.objects.filter(
-                action="permissions.revoked",
-                actor=self.admin,
-                description__contains=self.teacher.full_name,
-            ).exists()
+            TeacherPermission.objects.filter(teacher=self.teacher, permission_key="can_create_course").exists()
         )
 
     def test_teacher_permissions_are_replaced_and_audited(self):

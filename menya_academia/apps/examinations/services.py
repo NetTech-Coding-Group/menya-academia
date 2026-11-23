@@ -32,8 +32,18 @@ def start_exam_for_code(*, code_text, user=None):
     except Exam.DoesNotExist as exc:
         raise ExamUnavailable("The practice examination is not configured.") from exc
 
+    approved_filter = {
+        "is_active": True,
+        "approval_status": Question.ApprovalStatus.APPROVED,
+    }
+    selected_pool = (
+        exam.selected_questions.filter(**approved_filter) if exam.pk else Question.objects.none()
+    )
+    question_qs = (
+        selected_pool if selected_pool.exists() else Question.objects.filter(**approved_filter)
+    )
     eligible_questions = []
-    for question in Question.objects.filter(is_active=True).prefetch_related("options"):
+    for question in question_qs.prefetch_related("options"):
         options = list(question.options.all())
         if len(options) == 4 and sum(option.is_correct for option in options) == 1:
             correct_option = next(option for option in options if option.is_correct)

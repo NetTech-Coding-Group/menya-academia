@@ -240,10 +240,20 @@ def teacher_create(request):
                 preferred_language=form.cleaned_data["preferred_language"],
                 is_email_verified=form.cleaned_data["is_email_verified"],
                 is_active=form.cleaned_data["is_active"],
+                must_change_password=True,
+            )
+            teaching_category = form.cleaned_data["teaching_category"]
+            teaching_level = form.cleaned_data.get("teaching_level") or TeacherProfile.TeachingLevel.NONE
+            teaching_subject = (
+                TeacherProfile.Subject.ROAD_TRAFFIC_RULES
+                if teaching_category == TeacherProfile.TeachingCategory.TRAFFIC_RULES
+                else TeacherProfile.Subject.OTHER
             )
             profile = TeacherProfile.objects.create(
                 user=teacher,
-                teaching_subject=form.cleaned_data["teaching_subject"],
+                teaching_category=teaching_category,
+                teaching_level=teaching_level,
+                teaching_subject=teaching_subject,
                 teacher_role_title=form.cleaned_data.get("teacher_role_title", ""),
                 assigned_subjects=form.cleaned_data.get("assigned_subjects", ""),
                 responsibilities=form.cleaned_data.get("responsibilities", ""),
@@ -263,11 +273,11 @@ def teacher_create(request):
             record_activity(
                 request.user,
                 "teacher.created",
-                f"Added teacher account for {teacher.full_name} with {len(granted)} permissions and {profile.assigned_classes.count()} assigned classes.",
+                f"Added teacher account for {teacher.full_name} ({profile.get_teaching_category_display()}, {profile.get_teaching_level_display()}) with {len(granted)} permissions and {profile.assigned_classes.count()} assigned classes.",
             )
         messages.success(
             request,
-            "Teacher account created. Share the temporary password securely and ask the teacher to change it after signing in.",
+            "Teacher account created. Share the temporary password securely. The teacher will be required to change it on first login.",
         )
         return redirect("administrators:user_detail", user_id=teacher.pk)
 
@@ -314,7 +324,8 @@ def teacher_edit(request, user_id):
         "preferred_language": teacher.preferred_language,
         "is_email_verified": teacher.is_email_verified,
         "is_active": teacher.is_active,
-        "teaching_subject": profile.teaching_subject,
+        "teaching_category": profile.teaching_category,
+        "teaching_level": profile.teaching_level,
         "teacher_role_title": profile.teacher_role_title,
         "assigned_subjects": profile.assigned_subjects,
         "responsibilities": profile.responsibilities,
@@ -343,7 +354,15 @@ def teacher_edit(request, user_id):
             teacher.is_email_verified = form.cleaned_data["is_email_verified"]
             teacher.is_active = form.cleaned_data["is_active"]
             teacher.save()
-            profile.teaching_subject = form.cleaned_data["teaching_subject"]
+            teaching_category = form.cleaned_data["teaching_category"]
+            teaching_level = form.cleaned_data.get("teaching_level") or TeacherProfile.TeachingLevel.NONE
+            profile.teaching_category = teaching_category
+            profile.teaching_level = teaching_level
+            profile.teaching_subject = (
+                TeacherProfile.Subject.ROAD_TRAFFIC_RULES
+                if teaching_category == TeacherProfile.TeachingCategory.TRAFFIC_RULES
+                else TeacherProfile.Subject.OTHER
+            )
             profile.teacher_role_title = form.cleaned_data.get("teacher_role_title", "")
             profile.assigned_subjects = form.cleaned_data.get("assigned_subjects", "")
             profile.responsibilities = form.cleaned_data.get("responsibilities", "")

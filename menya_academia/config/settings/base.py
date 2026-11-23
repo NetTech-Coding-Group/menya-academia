@@ -58,6 +58,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.ForcePasswordChangeMiddleware",
     "apps.accounts.middleware.PreferredLanguageMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -79,6 +80,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.accounts.context_processors.social_login_options",
+                "apps.notifications.context_processors.messaging_notifications",
             ],
         },
     }
@@ -200,17 +202,35 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
-EMAIL_BACKEND = os.environ.get(
-    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
-)
+# Email delivery: prefer HTTP API backends over SMTP.
+# Set EMAIL_BACKEND explicitly to override. Examples:
+#   apps.notifications.email_backends.ResendEmailBackend  (RESEND_API_KEY)
+#   apps.notifications.email_backends.BrevoEmailBackend   (BREVO_API_KEY)
+#   django.core.mail.backends.console.EmailBackend        (dev)
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "").strip()
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@menyaacademia.com")
+DEFAULT_FROM_NAME = os.environ.get("DEFAULT_FROM_NAME", "MENYA ACADEMIA")
+_email_backend_default = "apps.notifications.email_backends.ResendEmailBackend"
+if not os.environ.get("EMAIL_BACKEND"):
+    if RESEND_API_KEY:
+        _email_backend_default = "apps.notifications.email_backends.ResendEmailBackend"
+    elif BREVO_API_KEY:
+        _email_backend_default = "apps.notifications.email_backends.BrevoEmailBackend"
+    elif DEBUG:
+        _email_backend_default = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", _email_backend_default)
+# SMTP settings kept for optional compatibility when EMAIL_BACKEND is explicitly set to SMTP.
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
-DEFAULT_FROM_EMAIL = os.environ.get(
-    "DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "upsami3@gmail.com"
-)
+
+# SMS delivery (Pindo). Keep disabled when SMS_PROVIDER_URL is not configured.
+SMS_PROVIDER_URL = os.environ.get("SMS_PROVIDER_URL", "").strip()
+SMS_API_KEY = os.environ.get("SMS_API_KEY", "").strip()
+SMS_SENDER_ID = os.environ.get("SMS_SENDER_ID", "MENYA").strip() or "MENYA"
 
 PAYMENTS_ENABLED = os.environ.get("PAYMENTS_ENABLED", "false").lower() == "true"
 EXAM_QUESTION_COUNT = int(os.environ.get("EXAM_QUESTION_COUNT", "30"))

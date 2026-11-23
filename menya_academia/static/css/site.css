@@ -439,3 +439,72 @@ main > section { animation: fadeUp .5s ease both; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Messaging nav badge */
+.nav-messages-link{position:relative;display:inline-flex;align-items:center;gap:.35rem}
+.nav-unread-badge{background:#dc2626;color:#fff;font-size:.7rem;font-weight:700;min-width:1.2rem;height:1.2rem;padding:0 .3rem;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+
+/* PROVISUAL exam result celebration */
+.confetti-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 60;
+}
+.confetti-piece {
+    position: absolute;
+    top: -24px;
+    opacity: .95;
+    animation: confetti-fall linear forwards;
+    will-change: transform, opacity;
+}
+.confetti-flower {
+    background: transparent !important;
+    width: auto !important;
+    height: auto !important;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.08));
+}
+@keyframes confetti-fall {
+    0% { transform: translate3d(0, -20px, 0) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translate3d(var(--drift, 40px), 105vh, 0) rotate(540deg); opacity: .9; }
+}
+.result-hero { margin-bottom: 10px; }
+.result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .9rem;
+    margin-bottom: 14px;
+}
+.result-badge-pass { background: #dcf7ed; color: #157a5d; }
+.result-badge-fail { background: #fff1ef; color: #b6453d; }
+.result-details {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    max-width: 720px;
+    margin: 0 auto 24px;
+}
+.result-detail {
+    background: rgba(255,255,255,.88);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 12px;
+    box-shadow: var(--shadow-sm);
+}
+.result-detail span { display: block; color: var(--muted); font-size: .82rem; margin-bottom: 4px; }
+.result-detail strong { color: var(--ink); font-size: 1.2rem; font-weight: 800; }
+.result-passed .score-card > strong { color: #17926f; }
+.result-not-passed .score-card > strong { color: #c6534b; }
+@media (max-width: 640px) {
+    .result-details { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .confetti-layer { display: none !important; }
+}

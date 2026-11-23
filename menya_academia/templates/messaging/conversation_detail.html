@@ -1,0 +1,197 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Conversation · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/messaging.css' %}">{% endblock %}
+{% block content %}
+<section class="container" style="padding:2rem 1rem;">
+    <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;margin-bottom:1.5rem;flex-wrap:wrap;">
+        <div>
+            <p class="learning-eyebrow" style="margin:0 0 .25rem;color:#64748b;font-weight:600;font-size:.8rem;letter-spacing:.04em;">MESSAGING</p>
+            <h1 style="margin:0;color:#0f2942;">Messages</h1>
+        </div>
+        {% if is_student %}<a class="messaging-btn messaging-btn-secondary" href="{% url 'messaging:contact_admin' %}">Contact Administration</a>{% endif %}
+    </div>
+
+    <div class="messaging-shell">
+        <aside class="messaging-sidebar">
+            <div class="messaging-sidebar-header">
+                <div><h2 style="font-size:1.1rem;">Conversations</h2><p>{{ conversation_items|length }} conversation{{ conversation_items|length|pluralize }}</p></div>
+            </div>
+            <ul class="messaging-conversation-list">
+                {% for item in conversation_items %}
+                <li>
+                    <a class="messaging-conversation-link {% if item.conversation.pk == conversation.pk %}is-active{% endif %}" href="{% url 'messaging:conversation_detail' item.conversation.pk %}">
+                        <div class="messaging-conversation-top">
+                            <div>
+                                <span class="messaging-conversation-title">{{ item.title }}</span>
+                                <div class="messaging-conversation-meta">{{ item.subtitle }}{% if item.conversation.is_support %} · <span class="messaging-status messaging-status-{{ item.conversation.status }}">{{ item.conversation.get_status_display }}</span>{% endif %}</div>
+                            </div>
+                            {% if item.unread %}<span class="messaging-unread">{{ item.unread }}</span>{% endif %}
+                        </div>
+                    </a>
+                </li>
+                {% empty %}
+                <li><div class="messaging-empty"><strong>No conversations</strong></div></li>
+                {% endfor %}
+            </ul>
+        </aside>
+
+        <div class="messaging-main">
+            <div class="messaging-main-header">
+                <div>
+                    {% if conversation.conversation_type == 'STUDENT_TEACHER' %}
+                        <h2 style="font-size:1.25rem;margin:0;">{% if request.user.id == conversation.student_id %}{{ conversation.teacher.full_name }}{% else %}{{ conversation.student.full_name }}{% endif %}</h2>
+                        <p>{% if conversation.course %}Course: {{ conversation.course.title }}{% endif %}{% if request.user.role == 'TEACHER' %} · Student{% endif %}</p>
+                    {% else %}
+                        <h2 style="font-size:1.25rem;margin:0;">{% if request.user.role == 'STUDENT' %}Administration Support{% else %}{{ conversation.student.full_name }}{% endif %}</h2>
+                        <p>Category: {{ conversation.get_category_display }}{% if conversation.subject %} · {{ conversation.subject }}{% endif %} · <span id="conversation-status-badge" class="messaging-status messaging-status-{{ conversation.status }}">{{ conversation.get_status_display }}</span></p>
+                    {% endif %}
+                </div>
+                {% if is_admin_messaging and conversation.is_support %}
+                <form method="post" action="{% url 'messaging:update_support_status' conversation.pk %}" style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+                    {% csrf_token %}
+                    <label for="status" style="font-size:.85rem;color:#64748b;font-weight:600;">Status</label>
+                    <select name="status" id="status" class="messaging-select" style="width:auto;min-width:140px;">
+                        {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if conversation.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="messaging-btn messaging-btn-secondary">Update</button>
+                </form>
+                {% endif %}
+            </div>
+
+            {% if page_obj.has_previous %}
+            <div class="messaging-pagination">
+                <a class="messaging-btn messaging-btn-secondary" href="?page={{ page_obj.previous_page_number }}">Load older messages</a>
+            </div>
+            {% endif %}
+
+            <div class="messaging-thread" id="message-thread" data-conversation-id="{{ conversation.pk }}" data-last-message-id="{{ last_message_id }}">
+                {% for msg in chat_messages %}
+                <article class="messaging-bubble {% if msg.sender_id == request.user.id %}is-own{% endif %} {% if conversation.is_support and msg.sender.role == 'ADMIN' %}is-admin{% endif %}" data-message-id="{{ msg.pk }}">
+                    <div class="messaging-bubble-header">
+                        <strong>{% if msg.sender_id == request.user.id %}You{% else %}{{ msg.sender.full_name }}{% endif %}</strong>
+                        <time>{{ msg.created_at|date:"d M Y, H:i" }}</time>
+                    </div>
+                    <div class="messaging-bubble-content">{{ msg.content|linebreaksbr }}</div>
+                    {% if msg.sender_id == request.user.id %}
+                    <div class="messaging-bubble-status">{% if msg.is_read %}Read{% if msg.read_at %} · {{ msg.read_at|date:"d M Y, H:i" }}{% endif %}{% else %}Sent{% endif %}</div>
+                    {% endif %}
+                </article>
+                {% empty %}
+                <div class="messaging-empty" id="empty-thread"><strong>No messages yet</strong><p>Start the conversation by sending a message below.</p></div>
+                {% endfor %}
+            </div>
+
+            {% if can_send %}
+            <div class="messaging-compose">
+                <form method="post" action="{% url 'messaging:send_message' conversation.pk %}" id="message-form">
+                    {% csrf_token %}
+                    <div class="messaging-field" style="margin-bottom:0;">
+                        <label for="{{ message_form.content.id_for_label }}" class="sr-only">Message</label>
+                        {{ message_form.content }}
+                        <div class="messaging-error" id="message-error" style="display:none;"></div>
+                    </div>
+                    <div class="messaging-compose-actions">
+                        <span class="messaging-muted" id="poll-status">Messages update automatically.</span>
+                        <button type="submit" class="messaging-btn messaging-btn-primary">Send</button>
+                    </div>
+                </form>
+            </div>
+            {% else %}
+            <div class="messaging-empty"><strong>Replies unavailable</strong><p>You cannot send messages in this conversation.</p></div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(function() {
+    const thread = document.getElementById('message-thread');
+    const form = document.getElementById('message-form');
+    if (!thread) return;
+    const conversationId = thread.dataset.conversationId;
+    let lastMessageId = thread.dataset.lastMessageId || '';
+    const errorEl = document.getElementById('message-error');
+    const pollStatus = document.getElementById('poll-status');
+
+    function scrollBottom() { thread.scrollTop = thread.scrollHeight; }
+    scrollBottom();
+
+    function escapeHtml(text) {
+        return (text || '').replace(/[&<>"']/g, function(c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        }).replace(/\n/g, '<br>');
+    }
+
+    function renderMessage(msg) {
+        const empty = document.getElementById('empty-thread');
+        if (empty) empty.remove();
+        const article = document.createElement('article');
+        article.className = 'messaging-bubble' + (msg.is_own ? ' is-own' : '') + (!msg.is_own && msg.sender_name ? '' : '');
+        article.dataset.messageId = msg.id;
+        let status = '';
+        if (msg.is_own) {
+            status = '<div class="messaging-bubble-status">' + (msg.is_read ? 'Read' + (msg.read_at ? ' · ' + escapeHtml(msg.read_at) : '') : 'Sent') + '</div>';
+        }
+        article.innerHTML = '<div class="messaging-bubble-header"><strong>' + (msg.is_own ? 'You' : escapeHtml(msg.sender_name)) + '</strong><time>' + escapeHtml(msg.created_at) + '</time></div>' +
+            '<div class="messaging-bubble-content">' + escapeHtml(msg.content) + '</div>' + status;
+        thread.appendChild(article);
+        lastMessageId = msg.id;
+        thread.dataset.lastMessageId = lastMessageId;
+    }
+
+    async function pollMessages() {
+        try {
+            const url = '{% url "messaging:conversation_messages" conversation.pk %}' + (lastMessageId ? '?after=' + encodeURIComponent(lastMessageId) : '');
+            const res = await fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.ok && data.messages) {
+                data.messages.forEach(renderMessage);
+                if (data.messages.length) scrollBottom();
+                const badge = document.getElementById('conversation-status-badge');
+                if (badge && data.conversation_status_display) {
+                    badge.textContent = data.conversation_status_display;
+                    badge.className = 'messaging-status messaging-status-' + (data.conversation_status || '');
+                }
+            }
+        } catch (e) { /* ignore polling errors */ }
+    }
+
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
+            const formData = new FormData(form);
+            const content = (formData.get('content') || '').trim();
+            if (!content) {
+                if (errorEl) { errorEl.textContent = 'Message cannot be empty.'; errorEl.style.display = 'block'; }
+                return;
+            }
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': formData.get('csrfmiddlewaretoken')},
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok || !data.ok) {
+                    if (errorEl) { errorEl.textContent = data.error || 'Unable to send message.'; errorEl.style.display = 'block'; }
+                    return;
+                }
+                renderMessage(data.message);
+                form.reset();
+                scrollBottom();
+            } catch (err) {
+                if (errorEl) { errorEl.textContent = 'Network error. Please try again.'; errorEl.style.display = 'block'; }
+            }
+        });
+    }
+
+    setInterval(pollMessages, 8000);
+})();
+</script>
+{% endblock %}

@@ -32,6 +32,7 @@
                 <a href="{% url 'community_results' %}">{{ "Traffic exam results"|tr }}</a>
                 {% if request.user.is_authenticated and request.user.role == "STUDENT" %}<a href="{% url 'enrollments:my_courses' %}">{{ "My school courses"|tr }}</a>{% endif %}
                 {% if request.user.is_authenticated and request.user.role == "TEACHER" %}{% if request.user.teacher_profile.application_status == "APPROVED" %}<a href="{% url 'teacher_workspace:workspace' %}">{{ "My workspace"|tr }}</a>{% else %}<a href="{% url 'teachers:application_status' %}">{{ "Application status"|tr }}</a>{% endif %}{% endif %}
+                {% if request.user.is_authenticated %}{% if request.user.role == "STUDENT" or request.user.role == "TEACHER" or request.user.is_superuser or request.user.is_staff and request.user.role == "ADMIN" %}<a href="{% url 'messaging:inbox' %}" class="nav-messages-link">Messages{% if unread_message_count %}<span class="nav-unread-badge">{{ unread_message_count }}</span>{% endif %}</a>{% endif %}{% endif %}
                 {% if request.user.is_superuser or request.user.is_staff and request.user.role == "ADMIN" %}<a href="{% url 'administrators:dashboard' %}">{{ "Admin panel"|tr }}</a>{% endif %}
             </nav>
 

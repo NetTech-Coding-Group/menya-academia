@@ -1,0 +1,115 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}{{ page_title }} · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="container workspace-form-page">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:workspace' %}">← Back to Teacher Dashboard</a>
+    <p class="learning-eyebrow">EXAM MANAGEMENT</p>
+    <h1>{{ page_title }}</h1>
+    <p class="workspace-form-intro">Create a multiple-choice traffic-rules exam. Save it as a draft or submit it for administrator approval. Only approved and active exams become available to learners.</p>
+
+    <form method="post" class="learning-form-card" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="learning-field">
+            <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+            {{ form.title }}
+            {% for error in form.title.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="learning-field">
+            <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+            {{ form.description }}
+            {% if form.description.help_text %}<small>{{ form.description.help_text }}</small>{% endif %}
+            {% for error in form.description.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="learning-field">
+            <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+            {{ form.category }}
+            {% for error in form.category.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="learning-field-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+            <div class="learning-field">
+                <label for="{{ form.question_count.id_for_label }}">{{ form.question_count.label }}</label>
+                {{ form.question_count }}
+                <small>This will match the number of selected questions when you save.</small>
+                {% for error in form.question_count.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="learning-field">
+                <label for="{{ form.duration_minutes.id_for_label }}">{{ form.duration_minutes.label }}</label>
+                {{ form.duration_minutes }}
+                {% for error in form.duration_minutes.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="learning-field">
+                <label for="{{ form.pass_mark.id_for_label }}">{{ form.pass_mark.label }}</label>
+                {{ form.pass_mark }}
+                {% for error in form.pass_mark.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+        </div>
+
+        <div class="learning-field">
+            <label for="{{ form.instructions.id_for_label }}">{{ form.instructions.label }}</label>
+            {{ form.instructions }}
+            {% if form.instructions.help_text %}<small>{{ form.instructions.help_text }}</small>{% endif %}
+            {% for error in form.instructions.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="learning-field">
+            <label>{{ form.selected_questions.label }}</label>
+            {% if form.selected_questions.help_text %}<small>{{ form.selected_questions.help_text }}</small>{% endif %}
+            {% for error in form.selected_questions.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            <div class="question-bank-picker" style="max-height:360px;overflow:auto;border:1px solid var(--border,#d9dde3);border-radius:10px;padding:12px;background:#fff;">
+                {% for checkbox in form.selected_questions %}
+                    <label style="display:flex;gap:10px;align-items:flex-start;padding:8px 4px;border-bottom:1px solid #eef1f4;">
+                        {{ checkbox.tag }}
+                        <span>{{ checkbox.choice_label }}</span>
+                    </label>
+                {% empty %}
+                    <p class="admin-muted">No active questions are available in the question bank. <a class="learning-inline-link" href="{% url 'teacher_workspace:question_create' %}">Add a question</a> first, then return to create your exam.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="learning-form-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
+            <a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:workspace' %}">Cancel</a>
+            <button class="learning-button learning-button-secondary" type="submit" name="action" value="draft">Save as Draft</button>
+            <button class="learning-button learning-button-primary" type="submit" name="action" value="submit">Submit for Approval</button>
+        </div>
+    </form>
+
+    {% if teacher_exams %}
+    <div class="learning-form-card" style="margin-top:24px;">
+        <p class="learning-eyebrow">YOUR EXAMS</p>
+        <h2 style="margin-top:0;">Created exams</h2>
+        <div style="overflow:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">Title</th>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">Category</th>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">Questions</th>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">Status</th>
+                        <th style="text-align:left;padding:10px;border-bottom:1px solid #d9dde3;">Active</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exam in teacher_exams %}
+                    <tr>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;">{{ exam.title }}</td>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;">{{ exam.category|default:"—" }}</td>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;">{{ exam.question_count }}</td>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;">{{ exam.get_status_display }}</td>
+                        <td style="padding:10px;border-bottom:1px solid #eef1f4;">{% if exam.is_active %}Yes{% else %}No{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

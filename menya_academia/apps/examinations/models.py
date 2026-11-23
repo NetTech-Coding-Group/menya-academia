@@ -9,6 +9,12 @@ from apps.provisual.models import Exam
 
 
 class Question(models.Model):
+    class ApprovalStatus(models.TextChoices):
+        DRAFT = "DRAFT", "Draft"
+        PENDING_APPROVAL = "PENDING_APPROVAL", "Pending approval"
+        APPROVED = "APPROVED", "Approved"
+        REJECTED = "REJECTED", "Rejected"
+
     text_rw = models.TextField(verbose_name="Question (Kinyarwanda)")
     text_en = models.TextField(verbose_name="Question (English)", blank=True)
     text_fr = models.TextField(verbose_name="Question (French)", blank=True)
@@ -17,6 +23,11 @@ class Question(models.Model):
     explanation_en = models.TextField(verbose_name="Explanation (English)", blank=True)
     explanation_fr = models.TextField(verbose_name="Explanation (French)", blank=True)
     is_active = models.BooleanField(default=True)
+    approval_status = models.CharField(
+        max_length=20,
+        choices=ApprovalStatus.choices,
+        default=ApprovalStatus.APPROVED,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

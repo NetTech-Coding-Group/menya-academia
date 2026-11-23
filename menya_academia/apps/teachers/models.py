@@ -55,6 +55,16 @@ class TeacherProfile(models.Model):
         REJECTED = "REJECTED", "Rejected"
         SUSPENDED = "SUSPENDED", "Suspended"
 
+    class TeachingCategory(models.TextChoices):
+        ACADEMIC = "ACADEMIC", "Academic Teacher"
+        TRAFFIC_RULES = "TRAFFIC_RULES", "Traffic Rules Teacher"
+
+    class TeachingLevel(models.TextChoices):
+        PRIMARY = "PRIMARY", "Primary"
+        SECONDARY = "SECONDARY", "Secondary"
+        BOTH = "BOTH", "Both"
+        NONE = "NONE", "Not applicable"
+
     class Subject(models.TextChoices):
         ROAD_TRAFFIC_RULES = "ROAD_TRAFFIC_RULES", "Road traffic rules"
         ROAD_SIGNS = "ROAD_SIGNS", "Road signs"
@@ -65,6 +75,17 @@ class TeacherProfile(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="teacher_profile",
+    )
+    teaching_category = models.CharField(
+        max_length=20,
+        choices=TeachingCategory.choices,
+        default=TeachingCategory.ACADEMIC,
+        db_index=True,
+    )
+    teaching_level = models.CharField(
+        max_length=10,
+        choices=TeachingLevel.choices,
+        default=TeachingLevel.PRIMARY,
     )
     teaching_subject = models.CharField(max_length=32, choices=Subject.choices)
     teacher_role_title = models.CharField(
@@ -119,6 +140,26 @@ class TeacherProfile(models.Model):
     @property
     def is_verified_teacher(self):
         return self.application_status == self.ApplicationStatus.APPROVED
+
+    @property
+    def is_academic_teacher(self):
+        return self.teaching_category == self.TeachingCategory.ACADEMIC
+
+    @property
+    def is_traffic_rules_teacher(self):
+        return self.teaching_category == self.TeachingCategory.TRAFFIC_RULES
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.teaching_category == self.TeachingCategory.TRAFFIC_RULES:
+            if self.teaching_level not in {self.TeachingLevel.NONE, ""}:
+                errors["teaching_level"] = "Traffic Rules teachers cannot have an academic teaching level."
+        elif self.teaching_category == self.TeachingCategory.ACADEMIC:
+            if self.teaching_level == self.TeachingLevel.NONE:
+                errors["teaching_level"] = "Select a teaching level for Academic teachers."
+        if errors:
+            raise ValidationError(errors)
 
     @property
     def subject_list(self):

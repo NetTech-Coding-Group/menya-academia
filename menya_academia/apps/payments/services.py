@@ -56,7 +56,7 @@ def confirm_verified_payment(*, reference, provider_reference, amount_rwf):
     if type(amount_rwf) is not int or amount_rwf <= 0:
         raise ValueError("The provider-confirmed amount must be a positive RWF integer.")
     payment = (
-        PaymentTransaction.objects.select_for_update()
+        PaymentTransaction.objects.select_for_update(of=("self",))
         .select_related("package", "course", "user")
         .get(reference=reference)
     )

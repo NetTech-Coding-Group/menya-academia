@@ -1,0 +1,89 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}{{ page_title }} · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/learning.css' %}">{% endblock %}
+{% block content %}
+<section class="container workspace-form-page">
+    <a class="learning-back-link" href="{% url 'teacher_workspace:question_bank' %}">← Subira ku bibazo</a>
+    <p class="learning-eyebrow">PROVISUAL QUESTION BANK</p>
+    <h1>Create PROVISUAL Questions</h1>
+    <p class="workspace-form-intro">Tegura ibibazo 20 bya PROVISUAL mu Kinyarwanda gusa. Ugomba kuzuza ibibazo byose 20 mbere yo kohereza. Ibisubizo bizoherezwa gusuzumwa na administrator.</p>
+
+    <div class="learning-form-card" style="margin-bottom:20px;">
+        <strong>Progress: {{ completed_questions }}/{{ total_questions }}</strong>
+        <div style="margin-top:10px;height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;">
+            <div style="height:100%;width:{% widthratio completed_questions total_questions 100 %}%;background:#0b6e4f;"></div>
+        </div>
+        <small class="admin-muted">Uzuza ibibazo byose {{ total_questions }} mbere yo kohereza.</small>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% for form in forms %}
+        <div class="learning-form-card" style="margin-bottom:24px;">
+            <p class="learning-eyebrow">IKIBAZO {{ forloop.counter }}/{{ total_questions }}</p>
+            <h2 style="margin-top:0;">Ikibazo {{ forloop.counter }}</h2>
+
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+            <div class="learning-field">
+                <label for="{{ form.text_rw.id_for_label }}">{{ form.text_rw.label }}</label>
+                {{ form.text_rw }}
+                {% for error in form.text_rw.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+
+            <div class="learning-field">
+                <label for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>
+                {{ form.image }}
+                {% for error in form.image.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+
+            <div class="learning-field">
+                <label for="{{ form.option_a_rw.id_for_label }}">{{ form.option_a_rw.label }}</label>
+                {{ form.option_a_rw }}
+                {% for error in form.option_a_rw.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="learning-field">
+                <label for="{{ form.option_b_rw.id_for_label }}">{{ form.option_b_rw.label }}</label>
+                {{ form.option_b_rw }}
+                {% for error in form.option_b_rw.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="learning-field">
+                <label for="{{ form.option_c_rw.id_for_label }}">{{ form.option_c_rw.label }}</label>
+                {{ form.option_c_rw }}
+                {% for error in form.option_c_rw.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="learning-field">
+                <label for="{{ form.option_d_rw.id_for_label }}">{{ form.option_d_rw.label }}</label>
+                {{ form.option_d_rw }}
+                {% for error in form.option_d_rw.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+
+            <div class="learning-field">
+                <label>{{ form.correct_option.label }}</label>
+                {{ form.correct_option }}
+                {% for error in form.correct_option.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+
+            <div class="learning-field">
+                <label for="{{ form.explanation_rw.id_for_label }}">{{ form.explanation_rw.label }}</label>
+                {{ form.explanation_rw }}
+                {% for error in form.explanation_rw.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+
+            <div class="learning-field">
+                <label for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
+                {{ form.is_active }}
+                {% for error in form.is_active.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="learning-form-actions" style="display:flex;gap:12px;flex-wrap:wrap;">
+            <a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:question_bank' %}">Hagarika</a>
+            <button class="learning-button learning-button-primary" type="submit">Submit 20 Questions</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

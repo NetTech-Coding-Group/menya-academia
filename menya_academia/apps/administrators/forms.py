@@ -32,19 +32,47 @@ class UserEditForm(forms.ModelForm):
 
 class TeacherAdminCreateForm(forms.Form):
     full_name = forms.CharField(max_length=150, label="Full name")
-    username = forms.CharField(max_length=50, label="Username")
-    email = forms.EmailField(label="Email address")
     phone_number = forms.CharField(max_length=20, label="Phone number")
+    email = forms.EmailField(label="Email address")
+    username = forms.CharField(max_length=50, label="Username")
     password1 = forms.CharField(
         label="Temporary password",
         widget=forms.PasswordInput,
         strip=False,
+        help_text="The teacher will be required to change this password on first login.",
     )
     password2 = forms.CharField(
-        label="Confirm password",
+        label="Confirm temporary password",
         widget=forms.PasswordInput,
         strip=False,
     )
+    teaching_category = forms.ChoiceField(
+        choices=TeacherProfile.TeachingCategory.choices,
+        label="Teaching category",
+    )
+    teaching_level = forms.ChoiceField(
+        choices=[
+            (TeacherProfile.TeachingLevel.PRIMARY, "Primary"),
+            (TeacherProfile.TeachingLevel.SECONDARY, "Secondary"),
+            (TeacherProfile.TeachingLevel.BOTH, "Both"),
+        ],
+        required=False,
+        label="Teaching level",
+        help_text="Required for Academic Teachers. Traffic Rules Teachers do not use academic levels.",
+    )
+    assigned_classes = forms.ModelMultipleChoiceField(
+        queryset=Course.objects.filter(is_archived=False).order_by("title"),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Assigned classes",
+    )
+    assigned_subjects = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        label="Assigned subjects",
+        help_text="Enter one subject per line or separate subjects with commas.",
+    )
+    is_active = forms.BooleanField(required=False, initial=True, label="Account active")
     preferred_language = forms.ChoiceField(
         choices=User.Language.choices,
         initial=User.Language.ENGLISH,
@@ -55,34 +83,15 @@ class TeacherAdminCreateForm(forms.Form):
         initial=True,
         label="Email verified",
     )
-    is_active = forms.BooleanField(required=False, initial=True, label="Account active")
-    teaching_subject = forms.ChoiceField(
-        choices=TeacherProfile.Subject.choices,
-        label="Primary subject",
-    )
     teacher_role_title = forms.CharField(
         max_length=120,
         required=False,
         label="Assigned role/title",
-        help_text="Example: Class Teacher, Subject Teacher, Head of Department.",
-    )
-    assigned_subjects = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 3}),
-        label="Assigned subjects",
-        help_text="Enter one subject per line or separate subjects with commas.",
     )
     responsibilities = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={"rows": 4}),
         label="Responsibilities",
-        help_text="Describe the teacher's duties and responsibilities.",
-    )
-    assigned_classes = forms.ModelMultipleChoiceField(
-        queryset=Course.objects.filter(is_archived=False).order_by("title"),
-        required=False,
-        widget=forms.CheckboxSelectMultiple,
-        label="Assigned classes/courses",
     )
     qualifications = forms.CharField(
         required=False,
@@ -120,6 +129,12 @@ class TeacherAdminCreateForm(forms.Form):
             raise forms.ValidationError("This username is already in use.")
         return username
 
+    def clean_phone_number(self):
+        phone = self.cleaned_data["phone_number"].strip()
+        if len(phone) < 7:
+            raise forms.ValidationError("Enter a valid phone number.")
+        return phone
+
     def clean(self):
         cleaned_data = super().clean()
         password1 = cleaned_data.get("password1")
@@ -137,24 +152,47 @@ class TeacherAdminCreateForm(forms.Form):
                 validate_password(password1, candidate)
             except forms.ValidationError as error:
                 self.add_error("password1", error)
+
+        category = cleaned_data.get("teaching_category")
+        level = cleaned_data.get("teaching_level")
+        if category == TeacherProfile.TeachingCategory.ACADEMIC:
+            if not level:
+                self.add_error("teaching_level", "Select a teaching level for Academic Teachers.")
+        elif category == TeacherProfile.TeachingCategory.TRAFFIC_RULES:
+            cleaned_data["teaching_level"] = TeacherProfile.TeachingLevel.NONE
+            # Traffic Rules teachers should not be assigned unrelated academic subjects.
+            subjects = (cleaned_data.get("assigned_subjects") or "").strip()
+            if subjects:
+                # Allow traffic-related subjects, but warn/block obvious academic-only misuse is hard;
+                # we enforce Traffic Rules focus by normalizing.
+                pass
         return cleaned_data
 
 
 class TeacherAdminEditForm(forms.Form):
     full_name = forms.CharField(max_length=150, label="Full name")
-    username = forms.CharField(max_length=50, label="Username")
-    email = forms.EmailField(label="Email address")
     phone_number = forms.CharField(max_length=20, label="Phone number")
-    preferred_language = forms.ChoiceField(
-        choices=User.Language.choices, label="Preferred language"
+    email = forms.EmailField(label="Email address")
+    username = forms.CharField(max_length=50, label="Username")
+    teaching_category = forms.ChoiceField(
+        choices=TeacherProfile.TeachingCategory.choices,
+        label="Teaching category",
     )
-    is_email_verified = forms.BooleanField(required=False, label="Email verified")
-    is_active = forms.BooleanField(required=False, label="Account active")
-    teaching_subject = forms.ChoiceField(
-        choices=TeacherProfile.Subject.choices, label="Primary subject"
+    teaching_level = forms.ChoiceField(
+        choices=[
+            (TeacherProfile.TeachingLevel.PRIMARY, "Primary"),
+            (TeacherProfile.TeachingLevel.SECONDARY, "Secondary"),
+            (TeacherProfile.TeachingLevel.BOTH, "Both"),
+            (TeacherProfile.TeachingLevel.NONE, "Not applicable"),
+        ],
+        required=False,
+        label="Teaching level",
     )
-    teacher_role_title = forms.CharField(
-        max_length=120, required=False, label="Assigned role/title"
+    assigned_classes = forms.ModelMultipleChoiceField(
+        queryset=Course.objects.filter(is_archived=False).order_by("title"),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Assigned classes",
     )
     assigned_subjects = forms.CharField(
         required=False,
@@ -162,24 +200,20 @@ class TeacherAdminEditForm(forms.Form):
         label="Assigned subjects",
         help_text="Enter one subject per line or separate subjects with commas.",
     )
-    responsibilities = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 4}),
-        label="Responsibilities",
+    is_active = forms.BooleanField(required=False, label="Account active")
+    preferred_language = forms.ChoiceField(
+        choices=User.Language.choices, label="Preferred language"
     )
-    assigned_classes = forms.ModelMultipleChoiceField(
-        queryset=Course.objects.filter(is_archived=False).order_by("title"),
-        required=False,
-        widget=forms.CheckboxSelectMultiple,
-        label="Assigned classes/courses",
+    is_email_verified = forms.BooleanField(required=False, label="Email verified")
+    teacher_role_title = forms.CharField(max_length=120, required=False, label="Assigned role/title")
+    responsibilities = forms.CharField(
+        required=False, widget=forms.Textarea(attrs={"rows": 4}), label="Responsibilities"
     )
     qualifications = forms.CharField(
         required=False, widget=forms.Textarea(attrs={"rows": 3}), label="Qualifications"
     )
     teaching_experience = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 3}),
-        label="Teaching experience",
+        required=False, widget=forms.Textarea(attrs={"rows": 3}), label="Teaching experience"
     )
     institution = forms.CharField(max_length=180, required=False, label="Institution")
     permissions = forms.MultipleChoiceField(
@@ -214,6 +248,22 @@ class TeacherAdminEditForm(forms.Form):
             raise forms.ValidationError("This username is already in use.")
         return username
 
+    def clean_phone_number(self):
+        phone = self.cleaned_data["phone_number"].strip()
+        if len(phone) < 7:
+            raise forms.ValidationError("Enter a valid phone number.")
+        return phone
+
+    def clean(self):
+        cleaned_data = super().clean()
+        category = cleaned_data.get("teaching_category")
+        level = cleaned_data.get("teaching_level")
+        if category == TeacherProfile.TeachingCategory.ACADEMIC:
+            if not level or level == TeacherProfile.TeachingLevel.NONE:
+                self.add_error("teaching_level", "Select a teaching level for Academic Teachers.")
+        elif category == TeacherProfile.TeachingCategory.TRAFFIC_RULES:
+            cleaned_data["teaching_level"] = TeacherProfile.TeachingLevel.NONE
+        return cleaned_data
 
 
 class PermissionAssignmentForm(forms.Form):

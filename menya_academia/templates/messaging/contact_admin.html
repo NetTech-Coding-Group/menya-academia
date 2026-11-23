@@ -1,0 +1,37 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Contact Administration · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/messaging.css' %}">{% endblock %}
+{% block content %}
+<section class="messaging-form-page">
+    <a href="{% url 'messaging:inbox' %}" style="text-decoration:none;color:#1d63d5;font-weight:600;">← Back to messages</a>
+    <div style="margin:1rem 0 1.5rem;">
+        <p class="learning-eyebrow" style="margin:0 0 .25rem;color:#64748b;font-weight:600;font-size:.8rem;letter-spacing:.04em;">SUPPORT</p>
+        <h1 style="margin:0;color:#0f2942;">Contact Administration</h1>
+        <p class="messaging-muted">Send a message to the MENYA ACADEMIA administration team. We can help with account, course, payment, or technical issues.</p>
+    </div>
+    <form method="post" class="messaging-form-card">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="messaging-error">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="messaging-field">
+            <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+            {{ form.category }}
+            {% for error in form.category.errors %}<div class="messaging-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="messaging-field">
+            <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}</label>
+            {{ form.subject }}
+            {% for error in form.subject.errors %}<div class="messaging-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="messaging-field">
+            <label for="{{ form.content.id_for_label }}">{{ form.content.label }}</label>
+            {{ form.content }}
+            {% for error in form.content.errors %}<div class="messaging-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="messaging-compose-actions">
+            <a class="messaging-btn messaging-btn-secondary" href="{% url 'messaging:inbox' %}">Cancel</a>
+            <button class="messaging-btn messaging-btn-primary" type="submit">Send message</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -11,10 +11,25 @@ class AnswerOptionInline(admin.TabularInline):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ("id", "text_en", "text_rw", "is_active")
-    list_filter = ("is_active",)
+    list_display = ("id", "short_text_rw", "approval_status", "is_active", "created_at")
+    list_filter = ("approval_status", "is_active")
     search_fields = ("text_en", "text_fr", "text_rw")
+    list_editable = ("approval_status", "is_active")
     inlines = (AnswerOptionInline,)
+    actions = ("approve_questions",)
+
+    @admin.display(description="Question (Kinyarwanda)")
+    def short_text_rw(self, obj):
+        text = (obj.text_rw or obj.text_en or obj.text_fr or "").strip()
+        return text[:80]
+
+    @admin.action(description="Approve selected questions")
+    def approve_questions(self, request, queryset):
+        updated = queryset.update(
+            approval_status=Question.ApprovalStatus.APPROVED,
+            is_active=True,
+        )
+        self.message_user(request, f"{updated} question(s) approved.")
 
 
 class AttemptQuestionInline(admin.TabularInline):

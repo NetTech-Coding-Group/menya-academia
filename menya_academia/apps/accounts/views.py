@@ -183,3 +183,39 @@ def profile(request):
         )
         return redirect("accounts:profile")
     return render(request, "accounts/profile.html", {"form": form})
+
+
+def force_password_change(request):
+    if not request.user.is_authenticated:
+        return redirect("accounts:login")
+    if not request.user.must_change_password:
+        return redirect("home")
+
+    from django.contrib.auth import update_session_auth_hash
+    from django.contrib.auth.forms import PasswordChangeForm
+
+    form = PasswordChangeForm(request.user, request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        user.must_change_password = False
+        user.save(update_fields=["must_change_password"])
+        update_session_auth_hash(request, user)
+        messages.success(request, "Your password has been updated. You can now continue.")
+        next_url = request.POST.get("next") or request.GET.get("next")
+        if next_url and url_has_allowed_host_and_scheme(
+            next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return redirect(next_url)
+        if user.role == User.Role.TEACHER:
+            return redirect("teacher_workspace:workspace")
+        if user.is_superuser or (user.is_staff and user.role == User.Role.ADMIN):
+            return redirect("administrators:dashboard")
+        return redirect("home")
+
+    return render(
+        request,
+        "accounts/force_password_change.html",
+        {"form": form, "next_url": request.POST.get("next") or request.GET.get("next", "")},
+    )

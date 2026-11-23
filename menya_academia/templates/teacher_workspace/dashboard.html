@@ -8,19 +8,28 @@
         <div>
             <p class="learning-eyebrow">TEACHER DASHBOARD</p>
             <h1>Welcome, {{ request.user.full_name }}</h1>
-            <p>{% if profile and profile.teacher_role_title %}{{ profile.teacher_role_title }} · {% endif %}Your personalized workspace shows only the classes, tasks, and tools assigned to you.</p>
+            <p>
+                {% if profile and profile.teacher_role_title %}{{ profile.teacher_role_title }} · {% endif %}
+                {% if is_academic_teacher %}Academic Teacher{% elif is_traffic_rules_teacher %}Traffic Rules Teacher{% endif %}
+                {% if profile %} · {{ profile.get_teaching_level_display }}{% endif %}
+            </p>
         </div>
-        <a class="learning-button learning-button-secondary" href="{% url 'teacher_workspace:permissions' %}">My permissions ({{ granted_count }})</a>
+        <a class="learning-button learning-button-secondary" href="{% url 'accounts:profile' %}">My Profile</a>
     </header>
 
     <nav class="workspace-nav" aria-label="Teacher navigation">
-        <a class="is-current" href="{% url 'teacher_workspace:workspace' %}">Dashboard</a>
-        <a href="#my-classes">My classes</a>
-        {% if can_record_attendance %}<a href="{% url 'teacher_workspace:attendance_select' %}">Attendance</a>{% endif %}
-        {% if can_enter_marks %}<a href="{% url 'teacher_workspace:marks_select' %}">Marks</a>{% endif %}
-        {% if can_monitor_performance %}<a href="{% url 'teacher_workspace:performance_select' %}">Performance</a>{% endif %}
-        {% if can_grade_assignments %}<a href="{% url 'teacher_workspace:assignment_submissions' %}">Assignments{% if pending_submissions %} ({{ pending_submissions }}){% endif %}</a>{% endif %}
-        <a href="{% url 'accounts:profile' %}">My profile</a>
+        <a class="is-current" href="{% url 'teacher_workspace:workspace' %}">Overview</a>
+        <a href="#my-classes">My Classes</a>
+        <a href="#my-subjects">My Subjects</a>
+        <a href="#study-notes">Study Notes</a>
+        <a href="#video-lessons">Video Lessons</a>
+        {% if can_grade_assignments or can_create_assignments %}<a href="{% url 'teacher_workspace:assignment_submissions' %}">Assignments{% if pending_submissions %} ({{ pending_submissions }}){% endif %}</a>{% endif %}
+        <a href="#question-bank">Question Bank</a>
+        <a href="#create-exams">Create Exams</a>
+        {% if can_monitor_performance %}<a href="{% url 'teacher_workspace:performance_select' %}">Student Results</a>{% endif %}
+        <a href="{% url 'messaging:inbox' %}">Student Messages{% if unread_message_count %} ({{ unread_message_count }}){% endif %}</a>
+        <a href="{% url 'messaging:inbox' %}">Notifications</a>
+        <a href="{% url 'accounts:profile' %}">My Profile</a>
     </nav>
 
     <div class="workspace-stats">
@@ -30,11 +39,12 @@
     </div>
 
     {% if profile %}
-    <section class="workspace-panel">
-        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">MY ASSIGNMENT</p><h2>Role, subjects, and responsibilities</h2></div></div>
+    <section class="workspace-panel" id="my-subjects">
+        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">MY ASSIGNMENT</p><h2>Teaching category, level, and subjects</h2></div></div>
         <div class="profile-facts">
+            <div><span>Teaching category</span><strong>{{ profile.get_teaching_category_display }}</strong></div>
+            <div><span>Teaching level</span><strong>{{ profile.get_teaching_level_display }}</strong></div>
             <div><span>Assigned role</span><strong>{{ profile.teacher_role_title|default:"Not specified" }}</strong></div>
-            <div><span>Primary subject</span><strong>{{ profile.get_teaching_subject_display }}</strong></div>
         </div>
         <div class="detail-stack">
             <div><span class="stat-label">Assigned subjects</span><div class="permission-chip-list">{% for subject in profile.subject_list %}<span class="permission-chip">{{ subject }}</span>{% empty %}<span class="permission-none">No subjects assigned</span>{% endfor %}</div></div>
@@ -61,7 +71,7 @@
     <section id="my-classes" class="workspace-panel">
         <div class="workspace-panel-heading">
             <div><p class="learning-eyebrow">MY CLASSES</p><h2>Assigned classes</h2><p>Manage only the classes assigned to you by the administrator.</p></div>
-            {% if can_create_course %}<a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:course_create' %}">Create class/course</a>{% endif %}
+            {% if can_create_course and not is_traffic_rules_teacher %}<a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:course_create' %}">Create class/course</a>{% endif %}
         </div>
         <div class="teacher-course-list">
             {% for course in courses %}
@@ -84,20 +94,68 @@
             {% empty %}
             <div class="learning-empty">
                 <h2>No classes assigned yet</h2>
-                <p>{% if can_create_course %}Create a class/course or ask your administrator to assign classes to you.{% else %}Ask your administrator to assign classes and the permissions you need.{% endif %}</p>
+                <p>{% if can_create_course and not is_traffic_rules_teacher %}Create a class/course or ask your administrator to assign classes to you.{% else %}Ask your administrator to assign classes and the permissions you need.{% endif %}</p>
             </div>
             {% endfor %}
         </div>
+    </section>
+
+    <section id="study-notes" class="workspace-panel">
+        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">STUDY NOTES</p><h2>Study notes</h2></div></div>
+        <p class="admin-muted">Create and manage study notes inside your assigned class lessons. Open a class to add or edit lesson materials.</p>
+    </section>
+
+    <section id="video-lessons" class="workspace-panel">
+        <div class="workspace-panel-heading"><div><p class="learning-eyebrow">VIDEO LESSONS</p><h2>Video lessons</h2></div></div>
+        <p class="admin-muted">Upload or link video lessons inside your assigned classes. Open a class to manage its lessons and materials.</p>
+    </section>
+
+    <section id="question-bank" class="workspace-panel">
+        <div class="workspace-panel-heading">
+            <div><p class="learning-eyebrow">QUESTION BANK</p><h2>Question bank</h2></div>
+            {% if can_create_exams and is_traffic_rules_teacher %}
+                <a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:question_create' %}">Create PROVISUAL Questions</a>
+            {% endif %}
+        </div>
+        {% if is_traffic_rules_teacher %}
+            <p class="admin-muted">Traffic Rules Teachers can create and manage multiple-choice traffic questions. Written-answer question creation is not available for Traffic Rules Teachers.</p>
+            {% if can_create_exams %}
+                <p><a class="learning-inline-link" href="{% url 'teacher_workspace:question_bank' %}">Manage question bank →</a></p>
+            {% else %}
+                <p class="admin-muted">You need the "Create exams" permission to manage questions.</p>
+            {% endif %}
+        {% else %}
+            <p class="admin-muted">Question bank access is available according to your assigned teaching category and permissions. Contact an administrator if you need question management access.</p>
+        {% endif %}
+    </section>
+
+    <section id="create-exams" class="workspace-panel">
+        <div class="workspace-panel-heading">
+            <div><p class="learning-eyebrow">EXAMS</p><h2>Create exams</h2></div>
+            {% if can_create_exams and is_traffic_rules_teacher %}
+                <a class="learning-button learning-button-primary" href="{% url 'teacher_workspace:exam_create' %}">Add Exam</a>
+            {% endif %}
+        </div>
+        {% if is_traffic_rules_teacher %}
+            <p class="admin-muted">Traffic Rules Teachers can create multiple-choice exams only. Written-answer exam creation is restricted.</p>
+            {% if can_create_exams %}
+                <p><a class="learning-inline-link" href="{% url 'teacher_workspace:exam_create' %}">Create a new exam →</a></p>
+            {% else %}
+                <p class="admin-muted">You need the "Create exams" permission to add exams.</p>
+            {% endif %}
+        {% else %}
+            <p class="admin-muted">Exam creation is available according to your assigned teaching category and permissions.</p>
+        {% endif %}
     </section>
 
     <section class="workspace-panel permissions-overview">
         <div class="workspace-panel-heading"><div><p class="learning-eyebrow">ACCESS</p><h2>Features available to you</h2></div><a class="learning-inline-link" href="{% url 'teacher_workspace:permissions' %}">View all permissions →</a></div>
         <div class="workspace-permission-grid">
             {% for title, items in permission_groups %}
-            <article><h3>{{ title }}</h3>{% for key,label in items %}<span>{{ label }}</span>{% empty %}<span class="permission-none">No permissions assigned</span>{% endfor %}</article>
+            <article><h3>{{ title }}</h3>{% for key,label,allowed in items %}<span>{{ label }} — {% if allowed %}Allowed{% else %}Not granted{% endif %}</span>{% empty %}<span class="permission-none">No permissions assigned</span>{% endfor %}</article>
             {% endfor %}
         </div>
-        <p class="learning-disclaimer">Access is limited to your assigned classes and the permissions granted by the administrator. Platform-wide settings and payment information are administrator-only.</p>
+        <p class="learning-disclaimer">Access is limited to your assigned classes and the permissions granted by the administrator. Teachers cannot change assigned subjects, teaching category, or access another teacher's private records.</p>
     </section>
 </section>
 {% endblock %}

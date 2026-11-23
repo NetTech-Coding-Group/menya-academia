@@ -109,8 +109,35 @@ Email verification uses Gmail SMTP when `EMAIL_HOST_USER` and
 `EMAIL_HOST_PASSWORD` with a Google App Password. Django loads `.env` at
 startup; restart the development server after editing it. If email credentials
 are missing in development, messages are printed in the server terminal.
-Never use your regular Gmail password or commit `.env`. Activation-code email
-delivery and an SMS gateway are not yet integrated.
+Never use your regular Gmail password or commit `.env`.
+
+## SMS integration (Pindo)
+
+Traffic exam activation codes are sent by SMS through `apps/notifications/services.py`.
+Configure Pindo with environment variables (no real credentials in `.env.example`):
+
+- `SMS_PROVIDER_URL` - Pindo single-SMS endpoint: `https://api.pindo.io/v1/sms/`
+- `SMS_API_KEY` - Pindo API token (used as `Authorization: Bearer <token>`)
+- `SMS_SENDER_ID` - approved Pindo sender ID
+
+Expected Pindo request:
+
+- Method: `POST`
+- Headers: `Authorization: Bearer <SMS_API_KEY>`, `Content-Type: application/json`, `Accept: */*`
+- JSON payload:
+
+```json
+{
+  "to": "+2507XXXXXXXX",
+  "text": "Your MENYA ACADEMIA activation code is ...",
+  "sender": "YOUR_APPROVED_SENDER_ID"
+}
+```
+
+The existing `send_sms(*, phone_number, message)` interface maps `message` to Pindo's `text` field.
+HTTP `201` is treated as successful submission. The service safely inspects the JSON response for SMS ID/status,
+logs delivery status without exposing credentials, and does not automatically retry activation-code messages.
+When SMS is not configured, development keeps the existing behavior: DEBUG prints the message and the service logs a warning.
 
 ## Google and Facebook sign-in
 
@@ -164,7 +191,7 @@ private answer review; anonymous results; and translated account, navigation,
 home, and PROVISUAL interfaces in English, French, and Kinyarwanda.
 
 Still required before a public paid launch: official MTN/Airtel provider
-adapters and onboarding, SMS delivery, real multilingual translations and
+adapters and onboarding, SMS provider configuration/credentials, real multilingual translations and
 question content for the remaining screens and course material, provider
 callback reconciliation, deployment configuration, course-specific exams and
 quizzes, teacher/student messaging, reporting, and notification modules. The

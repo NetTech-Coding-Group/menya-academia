@@ -225,3 +225,72 @@ class ProvisualWorkflowTests(TestCase):
         self.assertContains(response, "CAND-TEST0001")
         self.assertNotContains(response, "Private Candidate Name")
         self.assertNotContains(response, "private@example.com")
+
+
+class ProvisualKinyarwandaRenderingTests(TestCase):
+    def setUp(self):
+        self.package = ExamPackage.objects.create(
+            name="Single",
+            package_type=ExamPackage.PackageType.SINGLE,
+            price_rwf=200,
+            duration_days=1,
+            max_exam_attempts=1,
+            is_active=True,
+        )
+        self.exam = Exam.objects.create(
+            slug="practice",
+            title="PROVISUAL Practice Exam",
+            question_count=1,
+            duration_minutes=30,
+            pass_mark=70,
+            is_active=True,
+        )
+        payment = PaymentTransaction.objects.create(
+            package=self.package,
+            full_name="Learner",
+            phone_number="+250788000001",
+            amount_rwf=200,
+            provider=PaymentTransaction.Provider.MTN_MOMO,
+        )
+        self.code = confirm_verified_payment(
+            reference=payment.reference,
+            provider_reference="provider-ref-rw",
+            amount_rwf=200,
+        )
+        question = Question.objects.create(
+            text_rw="Iki kimenyetso gisobanura iki?",
+            text_en="What does this sign mean?",
+            text_fr="Que signifie ce panneau?",
+            explanation_rw="Ibisobanuro mu Kinyarwanda.",
+            explanation_en="English explanation.",
+            explanation_fr="Explication francaise.",
+            is_active=True,
+            approval_status=Question.ApprovalStatus.APPROVED,
+        )
+        for letter, is_correct in [("A", True), ("B", False), ("C", False), ("D", False)]:
+            AnswerOption.objects.create(
+                question=question,
+                letter=letter,
+                text_rw=f"Igisubizo {letter}",
+                text_en=f"Option {letter}",
+                text_fr=f"Option {letter} FR",
+                is_correct=is_correct,
+            )
+
+    def test_exam_take_and_review_render_kinyarwanda_only(self):
+        start = self.client.post(reverse("activate_code"), {"code": self.code.code})
+        self.assertEqual(start.status_code, 302)
+        attempt = ExamAttempt.objects.get()
+
+        take = self.client.get(reverse("exam_take", args=(attempt.pk,)))
+        self.assertContains(take, "Iki kimenyetso gisobanura iki?")
+        self.assertContains(take, "Igisubizo A")
+        self.assertNotContains(take, "What does this sign mean?")
+        self.assertNotContains(take, "Option A")
+
+        submit_attempt(attempt_id=attempt.pk)
+        review = self.client.get(reverse("exam_review", args=(attempt.pk,)))
+        self.assertContains(review, "Iki kimenyetso gisobanura iki?")
+        self.assertContains(review, "Ibisobanuro mu Kinyarwanda.")
+        self.assertNotContains(review, "English explanation.")
+        self.assertNotContains(review, "Explication francaise.")

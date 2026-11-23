@@ -134,9 +134,8 @@ def take_exam(request, attempt_id):
     previous_answer = AttemptAnswer.objects.filter(
         attempt=attempt, question=entry.question
     ).first()
-    language = request.LANGUAGE_CODE
     options = [
-        (option, option.get_text(language)) for option in entry.question.options.all()
+        (option, option.text_rw) for option in entry.question.options.all()
     ]
     return render(
         request,
@@ -144,7 +143,7 @@ def take_exam(request, attempt_id):
         {
             "attempt": attempt,
             "entry": entry,
-            "question_text": entry.question.get_text(language),
+            "question_text": entry.question.text_rw,
             "options": options,
             "position": position,
             "question_count": len(entries),
@@ -179,12 +178,19 @@ def _visible_attempt(attempt_id, request):
 
 def exam_results(request, attempt_id):
     attempt = _visible_attempt(attempt_id, request)
+    code = attempt.activation_code
+    code_status = code.effective_status
+    can_try_again = code_status == code.Status.ACTIVE and (
+        not code.package.max_exam_attempts
+        or code.attempts_made < code.package.max_exam_attempts
+    )
     return render(
         request,
         "provisual/exam_results.html",
         {
             "attempt": attempt,
             "incorrect_answers": attempt.total_questions - attempt.correct_answers,
+            "can_try_again": can_try_again,
         },
     )
 
@@ -202,7 +208,6 @@ def exam_review(request, attempt_id):
             "selected_option"
         )
     }
-    language = request.LANGUAGE_CODE
     review_rows = []
     for entry in questions:
         answer = answers.get(entry.question_id)
@@ -210,10 +215,10 @@ def exam_review(request, attempt_id):
             {
                 "entry": entry,
                 "answer": answer,
-                "text": entry.question.get_text(language),
-                "explanation": entry.question.get_explanation(language),
+                "text": entry.question.text_rw,
+                "explanation": entry.question.explanation_rw,
                 "options": [
-                    (option, option.get_text(language))
+                    (option, option.text_rw)
                     for option in entry.question.options.all()
                 ],
             }

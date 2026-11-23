@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Avg, Count, F, Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,6 +13,7 @@ from apps.courses.forms import CourseAnnouncementForm, CourseForm
 from apps.courses.models import Course
 from apps.enrollments.models import CourseEnrollment
 from apps.enrollments.services import paid_enrollment_for_user
+from apps.examinations.models import Question
 from apps.lessons.forms import (
     AssignmentForm,
     AssignmentGradeForm,
@@ -22,9 +24,17 @@ from apps.lessons.models import AssignmentSubmission, Lesson
 from apps.payments.models import PaymentTransaction
 from apps.permissions.decorators import teacher_permission_required
 from apps.permissions.models import TeacherPermission
+from apps.provisual.models import Exam
 from apps.teachers.models import TeacherProfile
 
-from .forms import AttendanceRecordForm, StudentMarkForm, enrolled_student_queryset
+from .forms import (
+    AttendanceRecordForm,
+    KinyarwandaQuestionForm,
+    StudentMarkForm,
+    TeacherExamForm,
+    TrafficQuestionForm,
+    enrolled_student_queryset,
+)
 from .models import AttendanceRecord, StudentMark
 
 
@@ -113,7 +123,7 @@ def workspace(request):
     labels = dict(TeacherPermission.PERMISSION_KEYS)
     courses = _accessible_courses(request.user).order_by("-updated_at")
     visible_permissions = [
-        (title, [(key, labels.get(key, key)) for key in keys if key in granted])
+        (title, [(key, labels.get(key, key), key in granted) for key in keys if key in labels])
         for title, keys in PERMISSION_GROUPS
     ]
     quick_actions = []
@@ -141,6 +151,8 @@ def workspace(request):
         assignment__lesson__section__course__in=courses,
         graded_at__isnull=True,
     ).count() if "can_grade_assignments" in granted else 0
+    is_academic = bool(profile and profile.is_academic_teacher)
+    is_traffic = bool(profile and profile.is_traffic_rules_teacher)
     return render(
         request,
         "teacher_workspace/dashboard.html",
@@ -153,6 +165,8 @@ def workspace(request):
             "granted_keys": granted,
             "quick_actions": quick_actions,
             "pending_submissions": pending_submissions,
+            "is_academic_teacher": is_academic,
+            "is_traffic_rules_teacher": is_traffic,
             "can_create_course": "can_create_course" in granted,
             "can_view_students": "can_view_students" in granted,
             "can_create_assignments": "can_create_assignments" in granted,
@@ -161,6 +175,7 @@ def workspace(request):
             "can_record_attendance": "can_record_attendance" in granted,
             "can_enter_marks": "can_enter_marks" in granted,
             "can_monitor_performance": "can_monitor_performance" in granted,
+            "can_create_exams": "can_create_exams" in granted,
         },
     )
 
@@ -640,6 +655,165 @@ def performance_course(request, course_id):
             "recent_marks": recent_marks,
             "recent_attendance": recent_attendance,
         },
+    )
+
+
+@login_required(login_url="accounts:login")
+@teacher_permission_required("can_create_exams")
+def exam_create(request):
+    profile = _teacher_profile(request.user)
+    if request.user.role == request.user.Role.TEACHER and not (
+        profile and profile.is_traffic_rules_teacher
+    ):
+        raise PermissionDenied("Only Traffic Rules Teachers can create traffic-rule exams.")
+
+    form = TeacherExamForm(request.POST or None)
+    form.submit_action = "submit" if request.POST.get("action") == "submit" else "draft"
+    if request.method == "POST" and form.is_valid():
+        exam = form.save(commit=False)
+        exam.teacher = request.user
+        exam.status = (
+            Exam.Status.PENDING_APPROVAL
+            if form.submit_action == "submit"
+            else Exam.Status.DRAFT
+        )
+        exam.is_active = False
+        exam.slug = ""
+        exam.save()
+        form.save_m2m()
+        exam.question_count = exam.selected_questions.count() or exam.question_count
+        exam.save(update_fields=["question_count"])
+        _record_teacher_activity(
+            request.user,
+            "exam.created",
+            f"{'Submitted' if exam.status == Exam.Status.PENDING_APPROVAL else 'Saved draft'} exam {exam.title}.",
+        )
+        if exam.status == Exam.Status.PENDING_APPROVAL:
+            messages.success(request, "Exam submitted for administrator approval.")
+        else:
+            messages.success(request, "Exam draft saved.")
+        return redirect("teacher_workspace:workspace")
+
+    teacher_exams = Exam.objects.filter(teacher=request.user).order_by("-updated_at", "-id")
+    return render(
+        request,
+        "teacher_workspace/add_exam.html",
+        {
+            "form": form,
+            "page_title": "Create Exam",
+            "teacher_exams": teacher_exams,
+        },
+    )
+
+
+@login_required(login_url="accounts:login")
+@teacher_permission_required("can_create_exams")
+def question_bank(request):
+    profile = _teacher_profile(request.user)
+    if request.user.role == request.user.Role.TEACHER and not (
+        profile and profile.is_traffic_rules_teacher
+    ):
+        raise PermissionDenied("Only Traffic Rules Teachers can manage traffic-rule questions.")
+    questions = Question.objects.prefetch_related("options").order_by("-id")
+    return render(
+        request,
+        "teacher_workspace/question_bank.html",
+        {"questions": questions},
+    )
+
+
+@login_required(login_url="accounts:login")
+@teacher_permission_required("can_create_exams")
+def question_create(request):
+    profile = _teacher_profile(request.user)
+    if request.user.role == request.user.Role.TEACHER and not (
+        profile and profile.is_traffic_rules_teacher
+    ):
+        raise PermissionDenied("Only Traffic Rules Teachers can create traffic-rule questions.")
+
+    total = 20
+    prefixes = [f"q{i}" for i in range(1, total + 1)]
+    if request.method == "POST":
+        forms = [
+            KinyarwandaQuestionForm(request.POST, request.FILES, prefix=prefix)
+            for prefix in prefixes
+        ]
+        # Validate all forms; do not save any if any is invalid.
+        all_valid = all(form.is_valid() for form in forms)
+        completed = sum(1 for form in forms if form.is_valid())
+        if all_valid:
+            try:
+                with transaction.atomic():
+                    created = []
+                    for form in forms:
+                        question = form.save(
+                            commit=False,
+                            approval_status=Question.ApprovalStatus.PENDING_APPROVAL,
+                        )
+                        question.is_active = False
+                        question.save()
+                        form.save_options(question)
+                        created.append(question)
+            except Exception:
+                messages.error(
+                    request,
+                    "Habaye ikibazo mu kubika ibibazo. Ongera ugerageze.",
+                )
+            else:
+                _record_teacher_activity(
+                    request.user,
+                    "questions.bulk_created",
+                    f"Submitted {len(created)} PROVISUAL questions for administrator review.",
+                )
+                messages.success(
+                    request,
+                    f"Ibibazo {len(created)} byoherejwe gusuzumwa na administrator.",
+                )
+                return redirect("teacher_workspace:question_bank")
+        else:
+            messages.error(
+                request,
+                "Uzuza ibibazo byose 20 mbere yo kohereza. Reba amakosa ari hasi.",
+            )
+    else:
+        forms = [KinyarwandaQuestionForm(prefix=prefix) for prefix in prefixes]
+        completed = 0
+
+    return render(
+        request,
+        "teacher_workspace/provisional_question_bulk_create.html",
+        {
+            "forms": forms,
+            "page_title": "Create PROVISUAL Questions",
+            "total_questions": total,
+            "completed_questions": completed,
+        },
+    )
+
+
+@login_required(login_url="accounts:login")
+@teacher_permission_required("can_create_exams")
+def question_edit(request, question_id):
+    profile = _teacher_profile(request.user)
+    if request.user.role == request.user.Role.TEACHER and not (
+        profile and profile.is_traffic_rules_teacher
+    ):
+        raise PermissionDenied("Only Traffic Rules Teachers can edit traffic-rule questions.")
+    question = get_object_or_404(Question, pk=question_id)
+    form = TrafficQuestionForm(request.POST or None, request.FILES or None, instance=question)
+    if request.method == "POST" and form.is_valid():
+        question = form.save()
+        _record_teacher_activity(
+            request.user,
+            "question.updated",
+            f"Updated traffic-rule question #{question.pk}.",
+        )
+        messages.success(request, "Question updated.")
+        return redirect("teacher_workspace:question_bank")
+    return render(
+        request,
+        "teacher_workspace/question_form.html",
+        {"form": form, "page_title": "Edit Question", "question": question},
     )
 
 

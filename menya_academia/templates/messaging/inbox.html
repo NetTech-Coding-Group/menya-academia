@@ -1,0 +1,89 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Messages · MENYA ACADEMIA{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/messaging.css' %}">{% endblock %}
+{% block content %}
+<section class="container" style="padding:2rem 1rem;">
+    <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;margin-bottom:1.5rem;flex-wrap:wrap;">
+        <div>
+            <p class="learning-eyebrow" style="margin:0 0 .25rem;color:#64748b;font-weight:600;font-size:.8rem;letter-spacing:.04em;">MESSAGING</p>
+            <h1 style="margin:0;color:#0f2942;">Messages</h1>
+            <p class="messaging-muted">Communicate securely with your {% if is_admin_messaging %}students{% elif is_teacher %}students{% else %}teachers and administration{% endif %}.</p>
+        </div>
+        {% if is_student %}
+        <a class="messaging-btn messaging-btn-primary" href="{% url 'messaging:contact_admin' %}">Contact Administration</a>
+        {% endif %}
+    </div>
+
+    <div class="messaging-shell">
+        <aside class="messaging-sidebar">
+            <div class="messaging-sidebar-header">
+                <div>
+                    <h2 style="font-size:1.1rem;">Conversations</h2>
+                    <p>{{ conversation_items|length }} conversation{{ conversation_items|length|pluralize }}</p>
+                </div>
+            </div>
+            {% if conversation_items %}
+            <ul class="messaging-conversation-list">
+                {% for item in conversation_items %}
+                <li>
+                    <a class="messaging-conversation-link" href="{% url 'messaging:conversation_detail' item.conversation.pk %}">
+                        <div class="messaging-conversation-top">
+                            <div>
+                                <span class="messaging-conversation-title">{{ item.title }}</span>
+                                <div class="messaging-conversation-meta">{{ item.subtitle }}{% if item.conversation.is_support %} · <span class="messaging-status messaging-status-{{ item.conversation.status }}">{{ item.conversation.get_status_display }}</span>{% endif %}</div>
+                            </div>
+                            {% if item.unread %}<span class="messaging-unread">{{ item.unread }}</span>{% endif %}
+                        </div>
+                        <div class="messaging-conversation-meta" style="margin-top:.45rem;">{% if item.conversation.last_message_at %}Updated {{ item.conversation.last_message_at|date:"d M Y, H:i" }}{% else %}Updated {{ item.conversation.updated_at|date:"d M Y, H:i" }}{% endif %}</div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="messaging-empty"><strong>No conversations yet</strong><p>Your conversations will appear here.</p></div>
+            {% endif %}
+        </aside>
+
+        <div class="messaging-main">
+            {% if is_student %}
+                <h2 style="font-size:1.25rem;">Start a conversation</h2>
+                <p class="messaging-muted">Message the teacher responsible for a course you are enrolled in, or contact administration for support.</p>
+
+                <div class="messaging-card-grid">
+                    <div class="messaging-card">
+                        <h3>Contact Administration</h3>
+                        <p>Need help with your account, course, payment, or a technical issue?</p>
+                        <a class="messaging-btn messaging-btn-primary" href="{% url 'messaging:contact_admin' %}">Contact Admin</a>
+                    </div>
+                </div>
+
+                <h3 style="margin-top:1.5rem;margin-bottom:.5rem;color:#0f2942;">Your course teachers</h3>
+                {% if enrolled_courses %}
+                <div class="messaging-card-grid">
+                    {% for course in enrolled_courses %}
+                    <div class="messaging-card">
+                        <h3>{{ course.teacher.full_name }}</h3>
+                        <p><span class="messaging-badge">{{ course.title }}</span></p>
+                        <form method="post" action="{% url 'messaging:start_teacher_conversation' course.teacher.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="course_id" value="{{ course.pk }}">
+                            <button type="submit" class="messaging-btn messaging-btn-secondary">Message teacher</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="messaging-empty"><strong>No enrolled courses found</strong><p>Once you are enrolled in a course, you can message its teacher here.</p></div>
+                {% endif %}
+            {% elif is_teacher %}
+                <div class="messaging-empty"><strong>Select a conversation</strong><p>Choose a student conversation from the list to view messages and reply. You can only access conversations for your assigned courses.</p></div>
+            {% elif is_admin_messaging %}
+                <div class="messaging-empty"><strong>Support inbox</strong><p>Select a student support conversation from the list to view details and respond.</p></div>
+            {% else %}
+                <div class="messaging-empty"><strong>Messaging unavailable</strong><p>Your account does not have access to messaging.</p></div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

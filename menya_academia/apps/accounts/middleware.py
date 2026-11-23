@@ -21,3 +21,29 @@ class PreferredLanguageMiddleware:
             translation.activate(request.LANGUAGE_CODE)
         response = self.get_response(request)
         return response
+
+
+class ForcePasswordChangeMiddleware:
+    """Redirect authenticated users who must change their password."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = getattr(request, "user", None)
+        if user and user.is_authenticated and getattr(user, "must_change_password", False):
+            allowed_prefixes = (
+                "/accounts/force-password-change/",
+                "/accounts/logout/",
+                "/accounts/password-change/",
+                "/i18n/setlang/",
+                "/static/",
+                "/media/",
+                "/admin/logout/",
+            )
+            path = request.path
+            if not any(path.startswith(prefix) for prefix in allowed_prefixes):
+                from django.shortcuts import redirect
+
+                return redirect("accounts:force_password_change")
+        return self.get_response(request)

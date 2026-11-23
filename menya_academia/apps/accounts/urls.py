@@ -50,6 +50,7 @@ urlpatterns = [
         ),
         name="password_reset_complete",
     ),
+    path("force-password-change/", views.force_password_change, name="force_password_change"),
     path(
         "password-change/",
         PasswordChangeView.as_view(

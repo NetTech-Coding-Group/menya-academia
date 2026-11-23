@@ -20,6 +20,9 @@
             <a href="{% url 'administrators:user_list' %}" class="{% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_detail' or request.resolver_match.url_name == 'user_edit' or request.resolver_match.url_name == 'user_delete' %}is-active{% endif %}">
                 <span class="menu-icon">👥</span> User management
             </a>
+            <a href="{% url 'administrators:teacher_create' %}" class="{% if request.resolver_match.url_name == 'teacher_create' or request.resolver_match.url_name == 'teacher_edit' %}is-active{% endif %}">
+                <span class="menu-icon">＋</span> Add teacher
+            </a>
             <a href="{% url 'administrators:teacher_permissions' %}" class="{% if request.resolver_match.url_name == 'teacher_permissions' %}is-active{% endif %}">
                 <span class="menu-icon">✓</span> Teacher permissions
             </a>
@@ -28,6 +31,9 @@
             </a>
             <a href="{% url 'administrators:activity_logs' %}" class="{% if request.resolver_match.url_name == 'activity_logs' %}is-active{% endif %}">
                 <span class="menu-icon">↺</span> Activity logs
+            </a>
+            <a href="{% url 'messaging:inbox' %}" class="{% if request.resolver_match.app_name == 'messaging' %}is-active{% endif %}">
+                <span class="menu-icon">✉</span> Support messages{% if unread_message_count %} <small>({{ unread_message_count }})</small>{% endif %}
             </a>
         </nav>
         <p class="admin-side-label admin-side-label-spaced">PLATFORM</p>
