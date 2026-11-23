@@ -345,6 +345,8 @@ class BrevoEmailBackendTests(SimpleTestCase):
     BREVO_API_KEY="test-brevo-key",
     DEFAULT_FROM_EMAIL="nettechcodinggroup@gmail.com",
     DEFAULT_FROM_NAME="MENYA ACADEMIA",
+    SITE_DOMAIN="127.0.0.1:8000",
+    SITE_SCHEME="http",
 )
 class BrevoPasswordResetIntegrationTests(TestCase):
     @patch("apps.notifications.email_backends.urlrequest.urlopen")
@@ -373,3 +375,38 @@ class BrevoPasswordResetIntegrationTests(TestCase):
         self.assertEqual(payload["sender"]["email"], "nettechcodinggroup@gmail.com")
         self.assertEqual(payload["to"], [{"email": "reset@example.com"}])
         self.assertIn("textContent", payload)
+        self.assertIn("http://127.0.0.1:8000/accounts/reset/", payload["textContent"])
+
+    @override_settings(SITE_DOMAIN="menya-academia.onrender.com", SITE_SCHEME="https")
+    @patch("apps.notifications.email_backends.urlrequest.urlopen")
+    def test_password_reset_email_uses_configured_production_domain(self, mock_urlopen):
+        response = Mock()
+        response.status = 201
+        response.getcode.return_value = 201
+        response.read.return_value = json.dumps({"messageId": "<msg@brevo>"}).encode("utf-8")
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        mock_urlopen.return_value = response
+
+        user = User.objects.create_user(
+            email="prod-reset@example.com",
+            username="prodresetuser",
+            full_name="Prod Reset User",
+            phone_number="+250788000098",
+            password="test-password",
+            role=User.Role.STUDENT,
+        )
+
+        resp = self.client.post(reverse("accounts:password_reset"), {"email": user.email})
+        self.assertEqual(resp.status_code, 302)
+        payload = json.loads(mock_urlopen.call_args.args[0].data.decode("utf-8"))
+        self.assertIn("https://menya-academia.onrender.com/accounts/reset/", payload["textContent"])
+        self.assertNotIn("example.com", payload["textContent"])
+
+        import re
+        from django.urls import resolve
+
+        match = re.search(r"https://menya-academia\.onrender\.com(/accounts/reset/[^\s]+)", payload["textContent"])
+        self.assertIsNotNone(match)
+        match = resolve(match.group(1))
+        self.assertEqual(match.view_name, "accounts:password_reset_confirm")

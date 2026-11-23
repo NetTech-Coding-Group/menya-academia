@@ -30,6 +30,13 @@ if not os.environ.get("DJANGO_ALLOWED_HOSTS"):
         "Set DJANGO_ALLOWED_HOSTS for the production domain."
     )
 
+# Public site/domain configuration used for absolute links (password reset, etc.).
+SITE_DOMAIN = os.environ.get("SITE_DOMAIN", "menya-academia.onrender.com").strip()
+SITE_NAME = os.environ.get("SITE_NAME", "MENYA ACADEMIA").strip() or "MENYA ACADEMIA"
+SITE_SCHEME = os.environ.get("SITE_SCHEME", "https").strip().lower() or "https"
+if SITE_SCHEME not in {"http", "https"}:
+    raise ValueError("SITE_SCHEME must be http or https.")
+
 
 # Brevo transactional email HTTP API configuration
 EMAIL_BACKEND = "apps.notifications.email_backends.BrevoEmailBackend"
@@ -46,6 +53,8 @@ if not DEFAULT_FROM_EMAIL:
 
 
 # HTTPS and security settings
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 SECURE_SSL_REDIRECT = True
 
 SESSION_COOKIE_SECURE = True

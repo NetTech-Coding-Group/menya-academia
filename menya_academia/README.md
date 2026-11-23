@@ -170,6 +170,7 @@ settings through your hosting platform's protected environment configuration:
 - `DJANGO_SETTINGS_MODULE=config.settings.production`
 - `DJANGO_SECRET_KEY` to a newly generated, high-entropy secret
 - `DJANGO_ALLOWED_HOSTS` to the production hostnames
+- `SITE_DOMAIN=menya-academia.onrender.com`, `SITE_NAME=MENYA ACADEMIA`, `SITE_SCHEME=https`
 - `DATABASE_URL` to the production PostgreSQL connection
 - `EMAIL_BACKEND=apps.notifications.email_backends.BrevoEmailBackend`
 - `BREVO_API_KEY`, `DEFAULT_FROM_EMAIL`, and `DEFAULT_FROM_NAME`

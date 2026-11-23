@@ -118,6 +118,11 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 SITE_ID = 1
+SITE_DOMAIN = os.environ.get("SITE_DOMAIN", "127.0.0.1:8000").strip()
+SITE_NAME = os.environ.get("SITE_NAME", "MENYA ACADEMIA").strip() or "MENYA ACADEMIA"
+SITE_SCHEME = os.environ.get("SITE_SCHEME", "http").strip().lower() or "http"
+if SITE_SCHEME not in {"http", "https"}:
+    raise ValueError("SITE_SCHEME must be http or https.")
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.MenyaSocialAccountAdapter"

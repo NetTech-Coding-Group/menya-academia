@@ -12,9 +12,28 @@ from allauth.account.models import EmailAddress
 
 from apps.teachers.models import TeacherProfile
 
+from django.contrib.auth import views as auth_views
+
 from .forms import EmailAuthenticationForm, ProfileForm, RegistrationForm
 from .models import User
 from .templatetags.ui_translations import translate_ui
+
+
+class PasswordResetView(auth_views.PasswordResetView):
+    def form_valid(self, form):
+        opts = {
+            "use_https": getattr(settings, "SITE_SCHEME", "http") == "https",
+            "token_generator": self.token_generator,
+            "from_email": self.from_email,
+            "email_template_name": self.email_template_name,
+            "subject_template_name": self.subject_template_name,
+            "request": self.request,
+            "html_email_template_name": self.html_email_template_name,
+            "extra_email_context": self.extra_email_context,
+            "domain_override": getattr(settings, "SITE_DOMAIN", "").strip() or None,
+        }
+        form.save(**opts)
+        return redirect(self.get_success_url())
 
 
 def set_language(request):

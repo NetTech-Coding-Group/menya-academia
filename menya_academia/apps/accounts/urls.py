@@ -5,7 +5,6 @@ from django.contrib.auth.views import (
     PasswordResetCompleteView,
     PasswordResetConfirmView,
     PasswordResetDoneView,
-    PasswordResetView,
 )
 from django.urls import path, reverse_lazy
 
@@ -22,7 +21,7 @@ urlpatterns = [
     path("verify/<str:token>/", views.verify_email, name="verify_email"),
     path(
         "password-reset/",
-        PasswordResetView.as_view(
+        views.PasswordResetView.as_view(
             template_name="accounts/password_reset_form.html",
             email_template_name="accounts/password_reset_email.html",
             subject_template_name="accounts/password_reset_subject.txt",
