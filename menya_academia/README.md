@@ -103,13 +103,19 @@ service is idempotent and creates either an activation code or a course
 enrollment for a matching confirmed payment. Mobile-money PINs must never pass
 through this application.
 
-Email verification uses Gmail SMTP when `EMAIL_HOST_USER` and
-`EMAIL_HOST_PASSWORD` are configured. To configure it locally, copy
-`.env.example` to `.env`, leave `EMAIL_HOST_USER=upsami3@gmail.com`, and replace
-`EMAIL_HOST_PASSWORD` with a Google App Password. Django loads `.env` at
-startup; restart the development server after editing it. If email credentials
-are missing in development, messages are printed in the server terminal.
-Never use your regular Gmail password or commit `.env`.
+Email delivery uses the Brevo transactional HTTP API through
+`apps.notifications.email_backends.BrevoEmailBackend`. Configure it with:
+
+- `EMAIL_BACKEND=apps.notifications.email_backends.BrevoEmailBackend`
+- `BREVO_API_KEY` - Brevo API key (sent as `api-key` header; never commit it)
+- `DEFAULT_FROM_EMAIL` - verified sender email (e.g. `nettechcodinggroup@gmail.com`)
+- `DEFAULT_FROM_NAME` - sender display name (e.g. `MENYA ACADEMIA`)
+
+The backend posts JSON to `https://api.brevo.com/v3/smtp/email` and supports
+subject, plain text, HTML, multiple recipients, sender name/email, timeouts,
+and safe error handling. Do not log API keys or sensitive email content. For
+local development without real email delivery, use
+`EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend`.
 
 ## SMS integration (Pindo)
 
@@ -165,8 +171,8 @@ settings through your hosting platform's protected environment configuration:
 - `DJANGO_SECRET_KEY` to a newly generated, high-entropy secret
 - `DJANGO_ALLOWED_HOSTS` to the production hostnames
 - `DATABASE_URL` to the production PostgreSQL connection
-- `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`,
-  `EMAIL_USE_TLS`, and `DEFAULT_FROM_EMAIL`
+- `EMAIL_BACKEND=apps.notifications.email_backends.BrevoEmailBackend`
+- `BREVO_API_KEY`, `DEFAULT_FROM_EMAIL`, and `DEFAULT_FROM_NAME`
 - `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`,
   `FACEBOOK_OAUTH_CLIENT_ID`, and `FACEBOOK_OAUTH_CLIENT_SECRET` (as needed)
 

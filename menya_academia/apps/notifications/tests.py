@@ -4,7 +4,9 @@ from socket import timeout as SocketTimeout
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError, URLError
 
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.test import SimpleTestCase, TestCase, override_settings
+from django.urls import reverse
 
 from apps.accounts.models import User
 from apps.payments.models import PaymentTransaction
@@ -208,3 +210,166 @@ class ExamActivationCodeSmsTests(TestCase):
         _, kwargs = mock_send_sms.call_args
         self.assertEqual(kwargs["phone_number"], "+250788000001")
         self.assertIn("ACADEMIA-TEST-CODE", kwargs["message"])
+
+
+@override_settings(
+    EMAIL_BACKEND="apps.notifications.email_backends.BrevoEmailBackend",
+    BREVO_API_KEY="test-brevo-key",
+    DEFAULT_FROM_EMAIL="nettechcodinggroup@gmail.com",
+    DEFAULT_FROM_NAME="MENYA ACADEMIA",
+)
+class BrevoEmailBackendTests(SimpleTestCase):
+    def _mock_response(self, status=201, payload=None):
+        response = Mock()
+        response.status = status
+        response.getcode.return_value = status
+        body = {} if payload is None else payload
+        response.read.return_value = json.dumps(body).encode("utf-8")
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        return response
+
+    @patch("apps.notifications.email_backends.urlrequest.urlopen")
+    def test_successful_brevo_api_response(self, mock_urlopen):
+        mock_urlopen.return_value = self._mock_response(201, {"messageId": "<msg@brevo>"})
+
+        message = EmailMessage(
+            subject="Hello",
+            body="Plain text body",
+            from_email="nettechcodinggroup@gmail.com",
+            to=["user@example.com"],
+        )
+        sent = message.send(fail_silently=False)
+
+        self.assertEqual(sent, 1)
+        request = mock_urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "https://api.brevo.com/v3/smtp/email")
+        self.assertEqual(request.headers.get("Api-key"), "test-brevo-key")
+        self.assertEqual(request.headers.get("Content-type"), "application/json")
+        payload = json.loads(request.data.decode("utf-8"))
+        self.assertEqual(payload["sender"]["email"], "nettechcodinggroup@gmail.com")
+        self.assertEqual(payload["sender"]["name"], "MENYA ACADEMIA")
+        self.assertEqual(payload["to"], [{"email": "user@example.com"}])
+        self.assertEqual(payload["subject"], "Hello")
+        self.assertEqual(payload["textContent"], "Plain text body")
+
+    @patch("apps.notifications.email_backends.urlrequest.urlopen")
+    def test_successful_brevo_api_response_with_html(self, mock_urlopen):
+        mock_urlopen.return_value = self._mock_response(201, {"messageId": "<msg@brevo>"})
+
+        message = EmailMultiAlternatives(
+            subject="Reset",
+            body="Plain text",
+            from_email="nettechcodinggroup@gmail.com",
+            to=["user@example.com"],
+        )
+        message.attach_alternative("<p>HTML</p>", "text/html")
+        sent = message.send(fail_silently=False)
+
+        self.assertEqual(sent, 1)
+        payload = json.loads(mock_urlopen.call_args.args[0].data.decode("utf-8"))
+        self.assertEqual(payload["textContent"], "Plain text")
+        self.assertEqual(payload["htmlContent"], "<p>HTML</p>")
+
+    @patch("apps.notifications.email_backends.urlrequest.urlopen")
+    def test_authentication_failure(self, mock_urlopen):
+        mock_urlopen.side_effect = HTTPError(
+            url="https://api.brevo.com/v3/smtp/email",
+            code=401,
+            msg="Unauthorized",
+            hdrs=None,
+            fp=io.BytesIO(b'{"message":"unauthorized"}'),
+        )
+
+        message = EmailMessage("Hi", "Body", "nettechcodinggroup@gmail.com", ["user@example.com"])
+        with self.assertRaises(RuntimeError):
+            message.send(fail_silently=False)
+
+    @patch("apps.notifications.email_backends.urlrequest.urlopen")
+    def test_invalid_sender(self, mock_urlopen):
+        mock_urlopen.side_effect = HTTPError(
+            url="https://api.brevo.com/v3/smtp/email",
+            code=400,
+            msg="Bad Request",
+            hdrs=None,
+            fp=io.BytesIO(b'{"message":"invalid sender"}'),
+        )
+
+        message = EmailMessage("Hi", "Body", "bad-sender", ["user@example.com"])
+        with self.assertRaises(RuntimeError):
+            message.send(fail_silently=False)
+
+    @patch("apps.notifications.email_backends.urlrequest.urlopen")
+    def test_network_timeout(self, mock_urlopen):
+        mock_urlopen.side_effect = SocketTimeout("timed out")
+
+        message = EmailMessage("Hi", "Body", "nettechcodinggroup@gmail.com", ["user@example.com"])
+        with self.assertRaises(RuntimeError) as ctx:
+            message.send(fail_silently=False)
+
+        self.assertIn("timed out", str(ctx.exception).lower())
+
+    @override_settings(BREVO_API_KEY="")
+    @patch("apps.notifications.email_backends.urlrequest.urlopen")
+    def test_missing_api_key(self, mock_urlopen):
+        message = EmailMessage("Hi", "Body", "nettechcodinggroup@gmail.com", ["user@example.com"])
+        with self.assertRaises(RuntimeError) as ctx:
+            message.send(fail_silently=False)
+
+        self.assertIn("BREVO_API_KEY", str(ctx.exception))
+        mock_urlopen.assert_not_called()
+
+    @patch("apps.notifications.email_backends.urlrequest.urlopen")
+    def test_multiple_recipients(self, mock_urlopen):
+        mock_urlopen.return_value = self._mock_response(201, {"messageId": "<msg@brevo>"})
+
+        message = EmailMessage(
+            subject="Hi",
+            body="Body",
+            from_email="nettechcodinggroup@gmail.com",
+            to=["a@example.com", "b@example.com"],
+            cc=["c@example.com"],
+            bcc=["d@example.com"],
+        )
+        sent = message.send(fail_silently=False)
+
+        self.assertEqual(sent, 1)
+        payload = json.loads(mock_urlopen.call_args.args[0].data.decode("utf-8"))
+        self.assertEqual(payload["to"], [{"email": "a@example.com"}, {"email": "b@example.com"}])
+        self.assertEqual(payload["cc"], [{"email": "c@example.com"}])
+        self.assertEqual(payload["bcc"], [{"email": "d@example.com"}])
+
+
+@override_settings(
+    EMAIL_BACKEND="apps.notifications.email_backends.BrevoEmailBackend",
+    BREVO_API_KEY="test-brevo-key",
+    DEFAULT_FROM_EMAIL="nettechcodinggroup@gmail.com",
+    DEFAULT_FROM_NAME="MENYA ACADEMIA",
+)
+class BrevoPasswordResetIntegrationTests(TestCase):
+    @patch("apps.notifications.email_backends.urlrequest.urlopen")
+    def test_password_reset_email_sent_through_brevo(self, mock_urlopen):
+        response = Mock()
+        response.status = 201
+        response.getcode.return_value = 201
+        response.read.return_value = json.dumps({"messageId": "<msg@brevo>"}).encode("utf-8")
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        mock_urlopen.return_value = response
+
+        user = User.objects.create_user(
+            email="reset@example.com",
+            username="resetuser",
+            full_name="Reset User",
+            phone_number="+250788000099",
+            password="test-password",
+            role=User.Role.STUDENT,
+        )
+
+        resp = self.client.post(reverse("accounts:password_reset"), {"email": user.email})
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(mock_urlopen.called)
+        payload = json.loads(mock_urlopen.call_args.args[0].data.decode("utf-8"))
+        self.assertEqual(payload["sender"]["email"], "nettechcodinggroup@gmail.com")
+        self.assertEqual(payload["to"], [{"email": "reset@example.com"}])
+        self.assertIn("textContent", payload)

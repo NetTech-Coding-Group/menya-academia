@@ -31,24 +31,18 @@ if not os.environ.get("DJANGO_ALLOWED_HOSTS"):
     )
 
 
-# Resend Email API configuration
-EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
+# Brevo transactional email HTTP API configuration
+EMAIL_BACKEND = "apps.notifications.email_backends.BrevoEmailBackend"
 
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "").strip()
+if not BREVO_API_KEY:
+    raise RuntimeError("Set BREVO_API_KEY in production environment.")
 
-if not RESEND_API_KEY:
-    raise RuntimeError(
-        "Set RESEND_API_KEY in production environment."
-    )
-
-ANYMAIL = {
-    "RESEND_API_KEY": RESEND_API_KEY,
-}
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", DEFAULT_FROM_EMAIL).strip()
+DEFAULT_FROM_NAME = os.environ.get("DEFAULT_FROM_NAME", DEFAULT_FROM_NAME).strip() or "MENYA ACADEMIA"
 
 if not DEFAULT_FROM_EMAIL:
-    raise RuntimeError(
-        "Set DEFAULT_FROM_EMAIL to your verified Resend sender address."
-    )
+    raise RuntimeError("Set DEFAULT_FROM_EMAIL to your verified Brevo sender address.")
 
 
 # HTTPS and security settings
